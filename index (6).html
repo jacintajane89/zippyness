@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Term Overlap Analysis</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+        #root {
+            width: 100%;
+            height: 100%;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const X = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        );
+
+        const VennDiagram = () => {
+            const [selectedTheme, setSelectedTheme] = useState(null);
+            const [hoveredNode, setHoveredNode] = useState(null);
+
+            const colors = {
+                primary: '#241451',
+                yellow: '#DEE140',
+                green: '#6EB77C',
+                red: '#ED4634',
+                gray: '#969796',
+                lightGray: '#F2F3F2'
+            };
+
+            // Theme data with certificate percentages
+            const themesData = [
+                {
+                    id: 'Irrelevant',
+                    name: 'Irrelevant',
+                    volume: 417510,
+                    percent: '31%',
+                    size: 160,
+                    color: colors.gray,
+                    certificate: 4.8,
+                    terms: { certification: 13.6, course: 9.5, certificate: 4.8, program: 12.1, training: 1.5 },
+                    examples: ['cybersecurity analyst', 'online masters in data science', 'data science masters programs online', 'online master\'s degree in data science', 'online masters degree data science', 'database analyst certification', 'data science online masters programs', 'online master\'s data science', 'master\'s in business analytics', 'masters in business analytics', 'ms in business analytics', 'master of science in business analytics']
+                },
+                {
+                    id: 'DA',
+                    name: 'Data Analytics',
+                    volume: 278710,
+                    percent: '20%',
+                    size: 150,
+                    color: colors.red,
+                    certificate: 13.6,
+                    terms: { course: 39.2, certification: 20.0, program: 14.4, certificate: 13.6, training: 9.6 },
+                    examples: ['data analytics certification', 'data and analytics certifications', 'data analytics cert', 'certificate of data analysis', 'certified in data analytics', 'certifications data analytics', 'certified data analyst', 'certified data analyst certification', 'data analyst certification', 'data analysis online course', 'data analyst classes online', 'data analytics classes online']
+                },
+                {
+                    id: 'NoCourse',
+                    name: 'No Course',
+                    volume: 169590,
+                    percent: '12%',
+                    size: 130,
+                    color: colors.gray,
+                    certificate: 0,
+                    terms: { certification: 6.3, program: 1.3 },
+                    examples: ['ba analyst', 'business it analyst', 'business analytics', 'business and analytics', 'business analytics in business', 'python and data science', 'python on data science', 'python programming for data science', 'python for data analysis', 'data analysis in python', 'online analytics', 'business analysis']
+                },
+                {
+                    id: 'BA',
+                    name: 'Business Analytics',
+                    volume: 77330,
+                    percent: '6%',
+                    size: 105,
+                    color: colors.green,
+                    certificate: 7.9,
+                    terms: { course: 24.7, certification: 24.7, program: 11.2, training: 10.1, certificate: 7.9 },
+                    examples: ['business analyst cert', 'business analyst certification', 'business analysis cert', 'business analyst professional certification', 'business analyst certified professional', 'ba certification', 'certified business analysis professional', 'business analytics certification', 'business analytics cert', 'business analyst course', 'ba analyst course', 'course business analysis']
+                },
+                {
+                    id: 'Google',
+                    name: 'Google',
+                    volume: 106390,
+                    percent: '8%',
+                    size: 115,
+                    color: colors.yellow,
+                    certificate: 14.6,
+                    terms: { certification: 54.2, course: 25.0, certificate: 14.6 },
+                    examples: ['google data analytics professional certificate', 'google\'s data analytics professional certificate', 'google data analytics certification', 'google analytics certification', 'certification for google analytics', 'google data analytics', 'google analytics course', 'google analytics course google', 'google analytics class', 'google data analyst', 'google analytics cert', 'google data analytics course']
+                },
+                {
+                    id: 'PowerBI',
+                    name: 'Power BI',
+                    volume: 53800,
+                    percent: '4%',
+                    size: 95,
+                    color: colors.red,
+                    certificate: 3.8,
+                    terms: { certification: 38.5, course: 25.0, training: 21.2, certificate: 3.8 },
+                    examples: ['power bi certification', 'powerbi trainings', 'powerbi course', 'courses on power bi', 'microsoft power bi certification', 'learning power bi', 'microsoft power bi course', 'microsoft power bi classes', 'microsoft certified power bi data analyst associate', 'training power bi microsoft', 'microsoft certified powerbi data analyst associate', 'power bi training courses']
+                },
+                {
+                    id: 'Free',
+                    name: 'Free',
+                    volume: 37580,
+                    percent: '3%',
+                    size: 85,
+                    color: colors.primary,
+                    certificate: 8.8,
+                    terms: { course: 50.0, certification: 27.9, training: 13.2, certificate: 8.8 },
+                    examples: ['free data analytics courses', 'data analytics training free', 'free data analytic courses', 'data analyst course free', 'free data analyst course', 'data analysis free course', 'free data analytics training', 'free course for data analytics', 'google analytics certification free', 'free data analytics certification', 'free data analyst certification', 'data analyst free certification']
+                },
+                {
+                    id: 'LessThan100',
+                    name: 'Less Than 100',
+                    volume: 100810,
+                    percent: '7%',
+                    size: 113,
+                    color: colors.primary,
+                    certificate: 8.8,
+                    terms: { course: 32.4, certification: 19.7, certificate: 8.8, training: 6.6, program: 3.6 },
+                    examples: ['data analyst certification for beginners', 'data analyst certification google', 'business analyst course for beginners', 'data analyst classes near me', 'how to become a business analyst with no experience', 'google course data analytics', 'hr data analytics certification', 'data analyst professional certificate', 'best online data science masters programs', 'top data analytics certifications', 'data analyst certification cost', 'google professional data analytics certificate']
+                },
+                {
+                    id: 'DS',
+                    name: 'Data Science',
+                    volume: 26350,
+                    percent: '2%',
+                    size: 80,
+                    color: colors.green,
+                    certificate: 32.3,
+                    terms: { course: 41.9, certificate: 32.3, certification: 16.1, program: 16.1 },
+                    examples: ['online data science course', 'online data science classes', 'online data science programs', 'certificate programs in data science', 'certification program in data science', 'online data science certificate', 'data science and analytics course', 'data science analytics course', 'data science and analytics courses', 'online certificate data science', 'best data science certification', 'best data science certificate']
+                },
+                {
+                    id: 'Coursera',
+                    name: 'Coursera',
+                    volume: 24670,
+                    percent: '2%',
+                    size: 78,
+                    color: colors.yellow,
+                    certificate: 15.6,
+                    terms: { course: 100.0, certificate: 15.6, certification: 3.1 },
+                    examples: ['coursera data analytics course', 'coursera data science course', 'data analysis courses coursera', 'data analytics courses coursera', 'data analysis course coursera', 'google data analytics professional certificate coursera', 'coursera data analytics', 'coursera data analyst', 'coursera data analytics certificate', 'coursera google data analytics', 'coursera data analyst course', 'coursera google data analytics professional certificate']
+                },
+                {
+                    id: 'Tableau',
+                    name: 'Tableau',
+                    volume: 23590,
+                    percent: '2%',
+                    size: 77,
+                    color: colors.primary,
+                    certificate: 0,
+                    terms: { certification: 51.9, training: 33.3, course: 25.9, program: 3.7 },
+                    examples: ['tableau certification', 'tableau software certification', 'tableau trainings', 'tableau course', 'tableau certified data analyst', 'tableau e learning', 'tableau certification data analyst', 'tableau data analyst certification', 'tableau training course', 'tableau training classes', 'tableau training courses', 'tableau classes online']
+                },
+                {
+                    id: 'BI',
+                    name: 'Business Intelligence',
+                    volume: 15600,
+                    percent: '1%',
+                    size: 70,
+                    color: colors.green,
+                    certificate: 0,
+                    terms: { course: 47.8, certification: 21.7, training: 4.3, program: 4.3 },
+                    examples: ['business intelligence programs', 'courses in business intelligence', 'class business intelligence', 'course business intelligence', 'business intelligence certification', 'business intelligence analyst certification', 'bi analyst certification', 'how to become a business intelligence analyst', 'microsoft business intelligence certification', 'how to become a bi analyst', 'how do i become a business intelligence analyst', 'bi certification']
+                },
+                {
+                    id: 'Python',
+                    name: 'Python',
+                    volume: 11100,
+                    percent: '1%',
+                    size: 65,
+                    color: colors.yellow,
+                    certificate: 4.3,
+                    terms: { course: 39.1, certification: 13.0, certificate: 4.3, training: 4.3 },
+                    examples: ['python data science course', 'python course data science', 'python for data science training', 'python data science class', 'data science course in python', 'python course for data science', 'python data analysis course', 'python data analytics course', 'data analytics python course', 'python course data analysis', 'data analysis python course', 'python for data science datacamp']
+                },
+                {
+                    id: 'Analytics',
+                    name: 'Analytics',
+                    volume: 5170,
+                    percent: '0%',
+                    size: 60,
+                    color: colors.red,
+                    certificate: 0,
+                    terms: { course: 41.7, certification: 16.7, program: 8.3 },
+                    examples: ['analytics professional certification', 'analytics courses', 'courses in analytics', 'analytics individual qualification', 'analytics certification', 'analytics courses online', 'analytics classes online', 'courses online analytics', 'certified analytics', 'analytics programs', 'online analytics degrees', 'big data and analytics courses']
+                }
+            ];
+
+            // Sort by certificate percentage
+            const sortedThemes = [...themesData].sort((a, b) => a.certificate - b.certificate);
+            
+            // Split into two rows
+            const midpoint = Math.ceil(sortedThemes.length / 2);
+            const topRow = sortedThemes.slice(0, midpoint);
+            const bottomRow = sortedThemes.slice(midpoint);
+
+            // Position bubbles in two rows based on certificate percentage
+            const width = 1000;
+            const topY = 200;
+            const bottomY = 500;
+            const padding = 100;
+            const usableWidth = width - (padding * 2);
+
+            // Find max certificate value for scaling
+            const maxCert = Math.max(...themesData.map(t => t.certificate));
+
+            const positionedThemes = [
+                ...topRow.map(theme => ({
+                    ...theme,
+                    x: padding + (theme.certificate / maxCert) * usableWidth,
+                    y: topY
+                })),
+                ...bottomRow.map(theme => ({
+                    ...theme,
+                    x: padding + (theme.certificate / maxCert) * usableWidth,
+                    y: bottomY
+                }))
+            ];
+
+            return (
+                <div style={{ position: 'relative', width: '100%', height: '100vh', background: colors.lightGray }}>
+                    <svg viewBox="0 0 1000 700" style={{ width: '100%', height: '100%' }}>
+                        {/* Reference line showing certificate scale */}
+                        <line
+                            x1={padding}
+                            y1={350}
+                            x2={width - padding}
+                            y2={350}
+                            stroke={colors.gray}
+                            strokeWidth="2"
+                            strokeDasharray="4,4"
+                            opacity="0.3"
+                        />
+                        <text
+                            x={padding}
+                            y={340}
+                            fill={colors.gray}
+                            fontSize="12"
+                            opacity="0.6"
+                        >
+                            0% certificate
+                        </text>
+                        <text
+                            x={width - padding - 80}
+                            y={340}
+                            fill={colors.gray}
+                            fontSize="12"
+                            opacity="0.6"
+                        >
+                            {maxCert.toFixed(1)}% certificate
+                        </text>
+
+                        {/* Theme bubbles */}
+                        {positionedThemes.map((theme) => {
+                            const isHovered = hoveredNode === theme.id;
+                            const isSelected = selectedTheme?.id === theme.id;
+
+                            return (
+                                <g
+                                    key={theme.id}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => setSelectedTheme(theme)}
+                                    onMouseEnter={() => setHoveredNode(theme.id)}
+                                    onMouseLeave={() => setHoveredNode(null)}
+                                >
+                                    <circle
+                                        cx={theme.x}
+                                        cy={theme.y}
+                                        r={theme.size}
+                                        fill="black"
+                                        opacity="0.1"
+                                        transform={`translate(4, 4)`}
+                                    />
+                                    
+                                    <circle
+                                        cx={theme.x}
+                                        cy={theme.y}
+                                        r={theme.size}
+                                        fill={theme.color}
+                                        stroke={isSelected ? colors.yellow : (isHovered ? colors.primary : 'white')}
+                                        strokeWidth={isSelected ? 6 : (isHovered ? 5 : 3)}
+                                        opacity="0.9"
+                                        filter={isHovered || isSelected ? "drop-shadow(0 6px 12px rgba(0,0,0,0.3))" : ""}
+                                    />
+
+                                    <text
+                                        x={theme.x}
+                                        y={theme.y - 20}
+                                        textAnchor="middle"
+                                        fill="white"
+                                        fontSize={Math.max(14, theme.size / 7)}
+                                        fontWeight="bold"
+                                    >
+                                        {theme.name}
+                                    </text>
+                                    <text
+                                        x={theme.x}
+                                        y={theme.y + 5}
+                                        textAnchor="middle"
+                                        fill="white"
+                                        fontSize={Math.max(20, theme.size / 6)}
+                                        fontWeight="bold"
+                                    >
+                                        {theme.volume.toLocaleString()}
+                                    </text>
+                                    <text
+                                        x={theme.x}
+                                        y={theme.y + 25}
+                                        textAnchor="middle"
+                                        fill="white"
+                                        fontSize={Math.max(11, theme.size / 9)}
+                                        opacity="0.95"
+                                    >
+                                        {theme.percent} of searches
+                                    </text>
+                                    <text
+                                        x={theme.x}
+                                        y={theme.y + 40}
+                                        textAnchor="middle"
+                                        fill="white"
+                                        fontSize={Math.max(11, theme.size / 9)}
+                                        opacity="0.8"
+                                        fontWeight="600"
+                                    >
+                                        {theme.certificate.toFixed(1)}% cert
+                                    </text>
+                                </g>
+                            );
+                        })}
+                    </svg>
+
+                    {/* Side panel */}
+                    {selectedTheme && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            width: '400px',
+                            height: '100%',
+                            background: 'white',
+                            boxShadow: '-4px 0 20px rgba(0,0,0,0.2)',
+                            animation: 'slideIn 0.3s ease-out',
+                            overflowY: 'auto',
+                            zIndex: 2000
+                        }}>
+                            <div style={{
+                                position: 'sticky',
+                                top: 0,
+                                background: selectedTheme.color,
+                                color: 'white',
+                                padding: '25px',
+                                zIndex: 10
+                            }}>
+                                <button
+                                    onClick={() => setSelectedTheme(null)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '20px',
+                                        right: '20px',
+                                        background: 'rgba(255,255,255,0.2)',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        width: '40px',
+                                        height: '40px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white'
+                                    }}
+                                >
+                                    <X size={24} />
+                                </button>
+                                <h2 style={{ margin: '0 0 10px 0', fontSize: '1.8em' }}>
+                                    {selectedTheme.name}
+                                </h2>
+                                <div style={{ fontSize: '1.4em', fontWeight: 'bold', marginBottom: '5px' }}>
+                                    {selectedTheme.volume.toLocaleString()}
+                                </div>
+                                <div style={{ opacity: 0.9 }}>
+                                    {selectedTheme.percent} of total searches
+                                </div>
+                                <div style={{ opacity: 0.9, marginTop: '8px', fontSize: '1.1em' }}>
+                                    📜 {selectedTheme.certificate.toFixed(1)}% contain "certificate"
+                                </div>
+                            </div>
+
+                            <div style={{ padding: '25px' }}>
+                                <h3 style={{ color: colors.primary, marginBottom: '15px' }}>
+                                    Key Search Terms
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '30px' }}>
+                                    {Object.entries(selectedTheme.terms)
+                                        .sort((a, b) => b[1] - a[1])
+                                        .map(([term, percent]) => (
+                                            <div
+                                                key={term}
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    padding: '12px',
+                                                    background: term === 'certificate' ? `${selectedTheme.color}20` : colors.lightGray,
+                                                    borderRadius: '8px',
+                                                    border: term === 'certificate' ? `2px solid ${selectedTheme.color}` : 'none'
+                                                }}
+                                            >
+                                                <span style={{ 
+                                                    fontWeight: term === 'certificate' ? 'bold' : '600', 
+                                                    color: colors.primary,
+                                                    textTransform: 'capitalize'
+                                                }}>
+                                                    {term} {term === 'certificate' ? '📜' : ''}
+                                                </span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <div style={{
+                                                        width: '80px',
+                                                        height: '8px',
+                                                        background: '#ddd',
+                                                        borderRadius: '4px',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        <div style={{
+                                                            width: `${Math.min(percent, 100)}%`,
+                                                            height: '100%',
+                                                            background: selectedTheme.color,
+                                                            borderRadius: '4px'
+                                                        }} />
+                                                    </div>
+                                                    <span style={{ 
+                                                        color: colors.gray, 
+                                                        fontSize: '0.9em',
+                                                        fontWeight: 'bold',
+                                                        minWidth: '45px',
+                                                        textAlign: 'right'
+                                                    }}>
+                                                        {percent.toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+
+                                <h3 style={{ color: colors.primary, marginBottom: '15px' }}>
+                                    Example Searches
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {selectedTheme.examples.map((example, idx) => (
+                                        <div
+                                            key={idx}
+                                            style={{
+                                                padding: '12px 15px',
+                                                background: colors.lightGray,
+                                                borderRadius: '8px',
+                                                color: colors.gray,
+                                                fontSize: '0.95em',
+                                                borderLeft: `3px solid ${selectedTheme.color}`
+                                            }}
+                                        >
+                                            {example}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<VennDiagram />);
+    </script>
+</body>
+</html>
