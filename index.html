@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Term Overlap Analysis</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        #root {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Lucide icons as SVG components
+        const FlipHorizontal = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3" />
+                <path d="M16 3h3a2 2 0 0 1 2 2v14a0 1.1-.9 2-2 2h-3" />
+                <path d="M12 20v2" />
+                <path d="M12 14v2" />
+                <path d="M12 8v2" />
+                <path d="M12 2v2" />
+            </svg>
+        );
+
+        const Search = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+            </svg>
+        );
+
+        const VennDiagramNetwork = () => {
+            const [flippedNodes, setFlippedNodes] = useState(new Set());
+            const [hoveredNode, setHoveredNode] = useState(null);
+            const [selectedOverlap, setSelectedOverlap] = useState(null);
+
+            const colors = {
+                primary: '#241451',
+                yellow: '#DEE140',
+                green: '#6EB77C',
+                red: '#ED4634',
+                gray: '#969796',
+                lightGray: '#F2F3F2'
+            };
+
+            const themes = [
+                {
+                    id: 'DA',
+                    name: 'Data Analytics',
+                    volume: 278710,
+                    percent: '20%',
+                    x: 300,
+                    y: 200,
+                    size: 140,
+                    color: colors.red,
+                    terms: {
+                        certification: 20.0,
+                        course: 39.2,
+                        certificate: 13.6,
+                        training: 9.6,
+                        program: 14.4
+                    },
+                    examples: [
+                        'data analytics certification',
+                        'data analyst certification',
+                        'certified data analyst',
+                        'data analysis online course',
+                        'data analyst classes online',
+                        'certificate of data analysis',
+                        'data analytics training',
+                        'certified in data analytics',
+                        'data analyst online classes',
+                        'data analytics cert'
+                    ]
+                },
+                {
+                    id: 'BA',
+                    name: 'Business Analytics',
+                    volume: 77330,
+                    percent: '6%',
+                    x: 500,
+                    y: 220,
+                    size: 110,
+                    color: colors.green,
+                    terms: {
+                        certification: 24.7,
+                        course: 24.7,
+                        certificate: 7.9,
+                        training: 10.1,
+                        program: 11.2
+                    },
+                    examples: [
+                        'business analyst certification',
+                        'business analytics certification',
+                        'business analyst course',
+                        'business analysis cert',
+                        'ba certification',
+                        'business analyst training',
+                        'certified business analysis professional',
+                        'business analytics course',
+                        'how to become a business analyst',
+                        'business analyst certified professional'
+                    ]
+                },
+                {
+                    id: 'Google',
+                    name: 'Google',
+                    volume: 106390,
+                    percent: '8%',
+                    x: 400,
+                    y: 400,
+                    size: 120,
+                    color: colors.yellow,
+                    terms: {
+                        certification: 54.2,
+                        course: 25.0,
+                        certificate: 14.6
+                    },
+                    examples: [
+                        'google data analytics professional certificate',
+                        'google data analytics certification',
+                        'google analytics certification',
+                        'google analytics course',
+                        'google data analyst certificate',
+                        'google data analytics course',
+                        'certification for google analytics',
+                        'google analytics cert',
+                        'google data certificate',
+                        'google analytics class'
+                    ]
+                },
+                {
+                    id: 'Free',
+                    name: 'Free',
+                    volume: 37580,
+                    percent: '3%',
+                    x: 180,
+                    y: 380,
+                    size: 90,
+                    color: colors.primary,
+                    terms: {
+                        course: 50.0,
+                        certification: 27.9,
+                        training: 13.2,
+                        certificate: 8.8
+                    },
+                    examples: [
+                        'free data analytics courses',
+                        'free data analyst course',
+                        'data analytics training free',
+                        'free data analytics certification',
+                        'data analyst course free',
+                        'free data analyst certification',
+                        'free course for data analytics',
+                        'data analysis free course',
+                        'free data analytics training',
+                        'google analytics certification free'
+                    ]
+                },
+                {
+                    id: 'PowerBI',
+                    name: 'Power BI',
+                    volume: 53800,
+                    percent: '4%',
+                    x: 650,
+                    y: 350,
+                    size: 100,
+                    color: colors.red,
+                    terms: {
+                        certification: 38.5,
+                        course: 25.0,
+                        training: 21.2,
+                        certificate: 3.8
+                    },
+                    examples: [
+                        'power bi certification',
+                        'microsoft power bi certification',
+                        'powerbi course',
+                        'power bi training courses',
+                        'microsoft power bi course',
+                        'microsoft certified power bi data analyst associate',
+                        'power bi training class',
+                        'powerbi trainings',
+                        'courses on power bi',
+                        'online power bi training'
+                    ]
+                },
+                {
+                    id: 'DS',
+                    name: 'Data Science',
+                    volume: 26350,
+                    percent: '2%',
+                    x: 250,
+                    y: 550,
+                    size: 85,
+                    color: colors.green,
+                    terms: {
+                        course: 41.9,
+                        certificate: 32.3,
+                        certification: 16.1,
+                        program: 16.1
+                    },
+                    examples: [
+                        'online data science course',
+                        'data science and analytics course',
+                        'certificate programs in data science',
+                        'best data science certification',
+                        'online data science certificate',
+                        'certification program in data science',
+                        'best data science certificate',
+                        'data science analytics course',
+                        'best online data science courses',
+                        'online certificate data science'
+                    ]
+                },
+                {
+                    id: 'Coursera',
+                    name: 'Coursera',
+                    volume: 24670,
+                    percent: '2%',
+                    x: 550,
+                    y: 520,
+                    size: 83,
+                    color: colors.yellow,
+                    terms: {
+                        course: 100.0,
+                        certificate: 15.6,
+                        certification: 3.1
+                    },
+                    examples: [
+                        'coursera data analytics course',
+                        'data analysis courses coursera',
+                        'coursera data science course',
+                        'coursera data analytics',
+                        'data analytics courses coursera',
+                        'coursera data analyst course',
+                        'coursera google data analytics',
+                        'google data analytics professional certificate coursera',
+                        'coursera google data analytics professional certificate',
+                        'business analytics course coursera'
+                    ]
+                },
+                {
+                    id: 'Tableau',
+                    name: 'Tableau',
+                    volume: 23590,
+                    percent: '2%',
+                    x: 720,
+                    y: 180,
+                    size: 82,
+                    color: colors.primary,
+                    terms: {
+                        certification: 51.9,
+                        training: 33.3,
+                        course: 25.9
+                    },
+                    examples: [
+                        'tableau certification',
+                        'tableau software certification',
+                        'tableau certified data analyst',
+                        'tableau training course',
+                        'tableau certification data analyst',
+                        'tableau trainings',
+                        'tableau course',
+                        'tableau data analyst certification',
+                        'tableau training courses',
+                        'tableau online training'
+                    ]
+                }
+            ];
+
+            const calculateOverlap = (theme1, theme2) => {
+                const sharedTerms = [];
+                let totalOverlap = 0;
+                
+                Object.keys(theme1.terms).forEach(term => {
+                    if (theme2.terms[term]) {
+                        const overlapPercent = Math.min(theme1.terms[term], theme2.terms[term]);
+                        sharedTerms.push({ term, percent: overlapPercent });
+                        totalOverlap += overlapPercent;
+                    }
+                });
+                
+                return { sharedTerms, totalOverlap: totalOverlap / (sharedTerms.length || 1) };
+            };
+
+            const overlaps = [];
+            for (let i = 0; i < themes.length; i++) {
+                for (let j = i + 1; j < themes.length; j++) {
+                    const overlap = calculateOverlap(themes[i], themes[j]);
+                    if (overlap.totalOverlap > 15 && overlap.sharedTerms.length > 0) {
+                        const dx = themes[j].x - themes[i].x;
+                        const dy = themes[j].y - themes[i].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        overlaps.push({
+                            theme1: themes[i],
+                            theme2: themes[j],
+                            ...overlap,
+                            midX: (themes[i].x + themes[j].x) / 2,
+                            midY: (themes[i].y + themes[j].y) / 2,
+                            distance
+                        });
+                    }
+                }
+            }
+
+            const toggleFlip = (id) => {
+                const newFlipped = new Set(flippedNodes);
+                if (newFlipped.has(id)) {
+                    newFlipped.delete(id);
+                } else {
+                    newFlipped.add(id);
+                }
+                setFlippedNodes(newFlipped);
+            };
+
+            return (
+                <div style={{
+                    minHeight: '100vh',
+                    background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.gray} 100%)`,
+                    padding: '20px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>
+                    <div style={{
+                        maxWidth: '1400px',
+                        margin: '0 auto',
+                        background: 'white',
+                        borderRadius: '20px',
+                        padding: '40px',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+                    }}>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <h1 style={{
+                                color: colors.primary,
+                                fontSize: '2.5em',
+                                marginBottom: '10px',
+                                fontWeight: 'bold'
+                            }}>
+                                🔍 Search Term Overlap Analysis
+                            </h1>
+                            <p style={{
+                                color: colors.gray,
+                                fontSize: '1.1em',
+                                marginBottom: '10px'
+                            }}>
+                                Click any bubble to see example searches • Hover over overlaps to see shared terms
+                            </p>
+                            <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 20px',
+                                background: colors.lightGray,
+                                borderRadius: '8px',
+                                color: colors.primary,
+                                fontSize: '0.95em'
+                            }}>
+                                <FlipHorizontal size={18} />
+                                <span>Overlapping bubbles share common search terms</span>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                            gap: '15px',
+                            marginBottom: '30px'
+                        }}>
+                            <div style={{
+                                background: `linear-gradient(135deg, ${colors.red} 0%, ${colors.primary} 100%)`,
+                                padding: '20px',
+                                borderRadius: '12px',
+                                textAlign: 'center',
+                                color: 'white'
+                            }}>
+                                <div style={{ fontSize: '1.8em', fontWeight: 'bold' }}>8</div>
+                                <div style={{ fontSize: '0.9em', opacity: 0.9 }}>Major Themes</div>
+                            </div>
+                            <div style={{
+                                background: `linear-gradient(135deg, ${colors.green} 0%, ${colors.yellow} 100%)`,
+                                padding: '20px',
+                                borderRadius: '12px',
+                                textAlign: 'center',
+                                color: colors.primary
+                            }}>
+                                <div style={{ fontSize: '1.8em', fontWeight: 'bold' }}>{overlaps.length}</div>
+                                <div style={{ fontSize: '0.9em', opacity: 0.9 }}>Significant Overlaps</div>
+                            </div>
+                            <div style={{
+                                background: `linear-gradient(135deg, ${colors.yellow} 0%, ${colors.primary} 100%)`,
+                                padding: '20px',
+                                borderRadius: '12px',
+                                textAlign: 'center',
+                                color: 'white'
+                            }}>
+                                <div style={{ fontSize: '1.8em', fontWeight: 'bold' }}>5</div>
+                                <div style={{ fontSize: '0.9em', opacity: 0.9 }}>Key Search Terms</div>
+                            </div>
+                        </div>
+
+                        <div style={{ position: 'relative', marginBottom: '30px' }}>
+                            <svg
+                                viewBox="0 0 850 650"
+                                style={{
+                                    width: '100%',
+                                    height: 'auto',
+                                    background: colors.lightGray,
+                                    borderRadius: '12px',
+                                    border: `3px solid ${colors.gray}20`
+                                }}
+                            >
+                                {overlaps.map((overlap, idx) => (
+                                    <g key={`overlap-${idx}`}>
+                                        <line
+                                            x1={overlap.theme1.x}
+                                            y1={overlap.theme1.y}
+                                            x2={overlap.theme2.x}
+                                            y2={overlap.theme2.y}
+                                            stroke={colors.gray}
+                                            strokeWidth="2"
+                                            strokeDasharray="5,5"
+                                            opacity="0.3"
+                                        />
+                                        <circle
+                                            cx={overlap.midX}
+                                            cy={overlap.midY}
+                                            r="25"
+                                            fill="white"
+                                            stroke={colors.primary}
+                                            strokeWidth="2"
+                                            opacity="0.9"
+                                            style={{ cursor: 'pointer' }}
+                                            onMouseEnter={() => setSelectedOverlap(overlap)}
+                                            onMouseLeave={() => setSelectedOverlap(null)}
+                                        />
+                                        <text
+                                            x={overlap.midX}
+                                            y={overlap.midY + 5}
+                                            textAnchor="middle"
+                                            fill={colors.primary}
+                                            fontSize="14"
+                                            fontWeight="bold"
+                                            style={{ cursor: 'pointer', pointerEvents: 'none' }}
+                                        >
+                                            {overlap.sharedTerms.length}
+                                        </text>
+                                    </g>
+                                ))}
+
+                                {themes.map((theme) => {
+                                    const isFlipped = flippedNodes.has(theme.id);
+                                    const isHovered = hoveredNode === theme.id;
+
+                                    return (
+                                        <g
+                                            key={theme.id}
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => toggleFlip(theme.id)}
+                                            onMouseEnter={() => setHoveredNode(theme.id)}
+                                            onMouseLeave={() => setHoveredNode(null)}
+                                        >
+                                            <circle
+                                                cx={theme.x}
+                                                cy={theme.y}
+                                                r={theme.size}
+                                                fill="black"
+                                                opacity="0.1"
+                                                transform={`translate(3, 3)`}
+                                            />
+                                            
+                                            <circle
+                                                cx={theme.x}
+                                                cy={theme.y}
+                                                r={theme.size}
+                                                fill={isFlipped ? 'white' : theme.color}
+                                                stroke={isHovered ? colors.primary : 'white'}
+                                                strokeWidth={isHovered ? 4 : 3}
+                                                opacity={isFlipped ? 0.95 : 0.85}
+                                            />
+
+                                            {!isFlipped ? (
+                                                <>
+                                                    <text
+                                                        x={theme.x}
+                                                        y={theme.y - 15}
+                                                        textAnchor="middle"
+                                                        fill="white"
+                                                        fontSize={Math.max(16, theme.size / 6)}
+                                                        fontWeight="bold"
+                                                        style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                                                    >
+                                                        {theme.name}
+                                                    </text>
+                                                    <text
+                                                        x={theme.x}
+                                                        y={theme.y + 8}
+                                                        textAnchor="middle"
+                                                        fill="white"
+                                                        fontSize={Math.max(20, theme.size / 5)}
+                                                        fontWeight="bold"
+                                                    >
+                                                        {theme.volume.toLocaleString()}
+                                                    </text>
+                                                    <text
+                                                        x={theme.x}
+                                                        y={theme.y + 28}
+                                                        textAnchor="middle"
+                                                        fill="white"
+                                                        fontSize={Math.max(12, theme.size / 8)}
+                                                        opacity="0.9"
+                                                    >
+                                                        {theme.percent} of searches
+                                                    </text>
+                                                    <text
+                                                        x={theme.x}
+                                                        y={theme.y + theme.size - 15}
+                                                        textAnchor="middle"
+                                                        fill="white"
+                                                        fontSize="11"
+                                                        opacity="0.8"
+                                                    >
+                                                        Click to see examples →
+                                                    </text>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <text
+                                                        x={theme.x}
+                                                        y={theme.y - theme.size + 25}
+                                                        textAnchor="middle"
+                                                        fill={colors.primary}
+                                                        fontSize="13"
+                                                        fontWeight="bold"
+                                                    >
+                                                        Example Searches:
+                                                    </text>
+                                                    {theme.examples.slice(0, 8).map((example, idx) => (
+                                                        <text
+                                                            key={idx}
+                                                            x={theme.x}
+                                                            y={theme.y - theme.size + 45 + idx * 18}
+                                                            textAnchor="middle"
+                                                            fill={colors.gray}
+                                                            fontSize="9"
+                                                        >
+                                                            {example.length > 30 ? example.substring(0, 30) + '...' : example}
+                                                        </text>
+                                                    ))}
+                                                    <text
+                                                        x={theme.x}
+                                                        y={theme.y + theme.size - 15}
+                                                        textAnchor="middle"
+                                                        fill={colors.primary}
+                                                        fontSize="11"
+                                                        opacity="0.7"
+                                                    >
+                                                        ← Click to flip back
+                                                    </text>
+                                                </>
+                                            )}
+
+                                            {isHovered && !isFlipped && (
+                                                <g transform={`translate(${theme.x + theme.size - 25}, ${theme.y - theme.size + 25})`}>
+                                                    <circle r="15" fill={colors.primary} opacity="0.9" />
+                                                    <path
+                                                        d="M -6 -6 L 6 0 L -6 6 Z"
+                                                        fill="white"
+                                                    />
+                                                </g>
+                                            )}
+                                        </g>
+                                    );
+                                })}
+                            </svg>
+
+                            {selectedOverlap && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '20px',
+                                    right: '20px',
+                                    background: 'white',
+                                    border: `3px solid ${colors.primary}`,
+                                    borderRadius: '12px',
+                                    padding: '20px',
+                                    maxWidth: '300px',
+                                    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                                    zIndex: 1000
+                                }}>
+                                    <div style={{
+                                        fontSize: '1.1em',
+                                        fontWeight: 'bold',
+                                        color: colors.primary,
+                                        marginBottom: '12px'
+                                    }}>
+                                        {selectedOverlap.theme1.name} ↔ {selectedOverlap.theme2.name}
+                                    </div>
+                                    <div style={{
+                                        fontSize: '0.9em',
+                                        color: colors.gray,
+                                        marginBottom: '12px'
+                                    }}>
+                                        {selectedOverlap.sharedTerms.length} shared term{selectedOverlap.sharedTerms.length > 1 ? 's' : ''}
+                                    </div>
+                                    {selectedOverlap.sharedTerms.map((st, idx) => (
+                                        <div
+                                            key={idx}
+                                            style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                padding: '8px 12px',
+                                                background: colors.lightGray,
+                                                borderRadius: '6px',
+                                                marginBottom: '6px'
+                                            }}
+                                        >
+                                            <span style={{ fontWeight: '600', color: colors.primary }}>
+                                                {st.term}
+                                            </span>
+                                            <span style={{ color: colors.gray, fontSize: '0.9em' }}>
+                                                ~{st.percent.toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{
+                            background: colors.lightGray,
+                            padding: '25px',
+                            borderRadius: '12px',
+                            marginTop: '30px'
+                        }}>
+                            <h3 style={{
+                                color: colors.primary,
+                                marginBottom: '15px',
+                                fontSize: '1.3em'
+                            }}>
+                                💡 How to Read This Visualization
+                            </h3>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                gap: '15px',
+                                color: colors.gray,
+                                lineHeight: '1.6'
+                            }}>
+                                <div>
+                                    <strong style={{ color: colors.primary }}>• Bubble Size:</strong> Represents search volume (larger = more searches)
+                                </div>
+                                <div>
+                                    <strong style={{ color: colors.primary }}>• Overlapping Position:</strong> Bubbles placed near each other share search terms
+                                </div>
+                                <div>
+                                    <strong style={{ color: colors.primary }}>• Click Bubbles:</strong> Flip to see example search queries
+                                </div>
+                                <div>
+                                    <strong style={{ color: colors.primary }}>• Hover Numbers:</strong> Shows how many terms are shared between themes
+                                </div>
+                                <div>
+                                    <strong style={{ color: colors.primary }}>• Key Terms:</strong> certification, course, certificate, training, program
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            marginTop: '25px',
+                            padding: '25px',
+                            background: `${colors.primary}10`,
+                            borderRadius: '12px',
+                            borderLeft: `4px solid ${colors.red}`
+                        }}>
+                            <h3 style={{
+                                color: colors.primary,
+                                marginBottom: '15px',
+                                fontSize: '1.3em',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                            }}>
+                                <Search size={24} />
+                                Key Insights
+                            </h3>
+                            <ul style={{
+                                color: colors.gray,
+                                lineHeight: '1.8',
+                                paddingLeft: '20px'
+                            }}>
+                                <li><strong style={{ color: colors.primary }}>"Course" dominates:</strong> Coursera (100%), Free (50%), Data Science (42%) - strong demand for course-based learning</li>
+                                <li><strong style={{ color: colors.primary }}>"Certification" popular:</strong> Google (54%), Tableau (52%), AWS (55%) - certification seekers are highly focused</li>
+                                <li><strong style={{ color: colors.primary }}>Platform loyalty:</strong> Strong overlap between Coursera-Google and BA-DA themes</li>
+                                <li><strong style={{ color: colors.primary }}>Tool-specific searches:</strong> Power BI and Tableau have distinct audiences with less overlap</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<VennDiagramNetwork />);
+    </script>
+</body>
+</html>
