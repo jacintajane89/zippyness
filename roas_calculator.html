@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ROAS & CAC Efficiency Calculator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f4f8; color: #1f2937; min-height: 100vh; padding: 24px; }
+  h1 { font-size: 18px; font-weight: 700; color: #1f3864; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 24px; }
+
+  .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+
+  .inputs-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .input-group label { display: block; font-size: 11px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  .input-group input[type=range] { width: 100%; accent-color: #2e75b6; }
+  .input-value { font-size: 20px; font-weight: 700; color: #1f3864; margin-bottom: 4px; }
+  .input-sub { font-size: 10px; color: #9ca3af; }
+
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+  .metric { background: #f8fafc; border-radius: 8px; padding: 14px; border-left: 3px solid #2e75b6; }
+  .metric.green { border-color: #22c55e; }
+  .metric.red { border-color: #ef4444; }
+  .metric.orange { border-color: #f59e0b; }
+  .metric-label { font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 700; color: #1f3864; }
+  .metric-sub { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+  .status-bar { border-radius: 8px; padding: 12px 16px; font-size: 13px; font-weight: 600; margin-top: 4px; }
+  .status-bar.pass { background: #dcfce7; color: #166534; }
+  .status-bar.fail { background: #fee2e2; color: #991b1b; }
+  .status-bar.warn { background: #fef9c3; color: #854d0e; }
+
+  /* Matrix table */
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead th { background: #1f3864; color: white; padding: 8px 10px; text-align: center; font-weight: 600; }
+  thead th:first-child { text-align: left; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody td { padding: 7px 10px; text-align: center; border-bottom: 1px solid #e5e7eb; }
+  tbody td:first-child { text-align: left; font-weight: 600; color: #374151; }
+  td.pass { background: #dcfce7; color: #166534; font-weight: 700; }
+  td.fail { background: #fee2e2; color: #991b1b; }
+  td.warn { background: #fef9c3; color: #854d0e; }
+  td.highlight { outline: 2px solid #2e75b6; outline-offset: -2px; }
+
+  .formula-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px; font-size: 12px; color: #1e40af; }
+  .formula-box strong { font-size: 13px; }
+  .formula-row { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 8px; }
+  .formula-item { background: white; border-radius: 6px; padding: 8px 12px; border: 1px solid #dbeafe; }
+</style>
+</head>
+<body>
+
+<h1>ROAS & CAC Efficiency Calculator</h1>
+<p class="subtitle">Target: CAC ≤ 30% of revenue = Overall ROAS ≥ 3.33×</p>
+
+<!-- INPUTS -->
+<div class="card">
+  <h2>Inputs</h2>
+  <div class="inputs-grid">
+    <div class="input-group">
+      <label>Brand Budget Share</label>
+      <div class="input-value" id="val-brand-pct">50%</div>
+      <input type="range" id="brand-pct" min="10" max="90" step="5" value="50" oninput="update()">
+      <div class="input-sub">Nonbrand = <span id="nb-pct-label">50%</span></div>
+    </div>
+    <div class="input-group">
+      <label>Nonbrand ROAS</label>
+      <div class="input-value" id="val-nb-roas">2.0×</div>
+      <input type="range" id="nb-roas" min="0.5" max="8" step="0.25" value="2.0" oninput="update()">
+      <div class="input-sub">Revenue per $1 nonbrand spend</div>
+    </div>
+    <div class="input-group">
+      <label>Total Monthly Spend ($)</label>
+      <div class="input-value" id="val-spend">$100,000</div>
+      <input type="range" id="total-spend" min="10000" max="500000" step="10000" value="100000" oninput="update()">
+      <div class="input-sub">For revenue dollar estimates</div>
+    </div>
+  </div>
+</div>
+
+<!-- KEY RESULTS -->
+<div class="card">
+  <h2>Key Results</h2>
+  <div class="results-grid">
+    <div class="metric" id="m-brand-roas-needed">
+      <div class="metric-label">Brand ROAS Needed</div>
+      <div class="metric-value" id="brand-roas-needed">—</div>
+      <div class="metric-sub">to hit 3.33× overall</div>
+    </div>
+    <div class="metric" id="m-overall-roas">
+      <div class="metric-label">Blended ROAS</div>
+      <div class="metric-value" id="overall-roas">—</div>
+      <div class="metric-sub">at current inputs</div>
+    </div>
+    <div class="metric" id="m-cac-pct">
+      <div class="metric-label">Effective CAC %</div>
+      <div class="metric-value" id="cac-pct">—</div>
+      <div class="metric-sub">target ≤ 30%</div>
+    </div>
+    <div class="metric" id="m-rev">
+      <div class="metric-label">Revenue Generated</div>
+      <div class="metric-value" id="rev-val">—</div>
+      <div class="metric-sub">at blended ROAS</div>
+    </div>
+  </div>
+  <div class="status-bar pass" id="status-bar" style="margin-top:12px">
+    ✓ On track
+  </div>
+</div>
+
+<!-- FORMULA -->
+<div class="card">
+  <h2>How It's Calculated</h2>
+  <div class="formula-box">
+    <strong>Blended ROAS = (Brand% × Brand ROAS) + (Nonbrand% × Nonbrand ROAS)</strong>
+    <div class="formula-row">
+      <div class="formula-item">CAC% = 1 ÷ Blended ROAS × 100</div>
+      <div class="formula-item">Brand ROAS needed = (3.33 − Nonbrand% × NB ROAS) ÷ Brand%</div>
+      <div class="formula-item">Target ROAS = 1 ÷ 30% = <strong>3.33×</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO MATRIX -->
+<div class="card">
+  <h2>Scenario Matrix — Brand ROAS Required (highlighted cell = your current inputs)</h2>
+  <table id="matrix-table">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <p style="font-size:10px;color:#9ca3af;margin-top:8px">
+    🟢 Achievable (Brand ROAS ≤ 8×) &nbsp;|&nbsp; 🟡 Stretch (8–12×) &nbsp;|&nbsp; 🔴 Unrealistic (>12×)
+  </p>
+</div>
+
+<script>
+const NB_ROAS_COLS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0];
+const BRAND_PCT_ROWS = [20, 30, 40, 50, 60, 70, 80];
+const TARGET_ROAS = 1 / 0.30; // 3.333...
+
+function fmt(n, dec=2) { return n.toFixed(dec); }
+function fmtPct(n) { return n.toFixed(1) + '%'; }
+function fmtMoney(n) { return '$' + Math.round(n).toLocaleString(); }
+
+function calcBrandROAS(brandPct, nbRoas) {
+  const nbPct = 1 - brandPct;
+  return (TARGET_ROAS - nbPct * nbRoas) / brandPct;
+}
+
+function calcBlendedROAS(brandPct, brandRoas, nbRoas) {
+  return brandPct * brandRoas + (1 - brandPct) * nbRoas;
+}
+
+function buildMatrix() {
+  const thead = document.querySelector('#matrix-table thead');
+  const tbody = document.querySelector('#matrix-table tbody');
+  
+  // Header
+  let hrow = '<tr><th>Brand %↓ / NB ROAS→</th>';
+  NB_ROAS_COLS.forEach(nb => { hrow += `<th>${nb.toFixed(1)}×</th>`; });
+  hrow += '</tr>';
+  thead.innerHTML = hrow;
+
+  // Body
+  let html = '';
+  BRAND_PCT_ROWS.forEach(bpct => {
+    html += `<tr><td>${bpct}% Brand</td>`;
+    NB_ROAS_COLS.forEach(nb => {
+      const needed = calcBrandROAS(bpct/100, nb);
+      let cls = needed <= 0 ? 'fail' : needed <= 8 ? 'pass' : needed <= 12 ? 'warn' : 'fail';
+      const display = needed <= 0 ? 'N/A' : `${fmt(needed)}×`;
+      html += `<td class="${cls}" data-bpct="${bpct}" data-nb="${nb}">${display}</td>`;
+    });
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function update() {
+  const brandPct = parseFloat(document.getElementById('brand-pct').value) / 100;
+  const nbRoas   = parseFloat(document.getElementById('nb-roas').value);
+  const spend    = parseFloat(document.getElementById('total-spend').value);
+
+  // Update labels
+  document.getElementById('val-brand-pct').textContent = Math.round(brandPct*100) + '%';
+  document.getElementById('nb-pct-label').textContent  = Math.round((1-brandPct)*100) + '%';
+  document.getElementById('val-nb-roas').textContent   = nbRoas.toFixed(2) + '×';
+  document.getElementById('val-spend').textContent     = fmtMoney(spend);
+
+  // Calculations
+  const brandRoasNeeded = calcBrandROAS(brandPct, nbRoas);
+  // For "current" blended ROAS, assume brand is hitting exactly what's needed
+  // But also show what happens if brand ROAS = needed value
+  const blendedRoas = TARGET_ROAS; // by definition if brand hits needed
+  const cacPct = (1 / blendedRoas) * 100;
+  const revenue = spend * blendedRoas;
+
+  // Brand ROAS needed
+  const brnEl = document.getElementById('brand-roas-needed');
+  const brnMetric = document.getElementById('m-brand-roas-needed');
+  if (brandRoasNeeded <= 0) {
+    brnEl.textContent = 'N/A';
+    brnMetric.className = 'metric red';
+  } else if (brandRoasNeeded <= 8) {
+    brnEl.textContent = fmt(brandRoasNeeded) + '×';
+    brnMetric.className = 'metric green';
+  } else if (brandRoasNeeded <= 12) {
+    brnEl.textContent = fmt(brandRoasNeeded) + '×';
+    brnMetric.className = 'metric orange';
+  } else {
+    brnEl.textContent = fmt(brandRoasNeeded) + '×';
+    brnMetric.className = 'metric red';
+  }
+
+  document.getElementById('overall-roas').textContent = fmt(TARGET_ROAS) + '×';
+  document.getElementById('cac-pct').textContent = fmtPct(cacPct);
+  document.getElementById('rev-val').textContent = fmtMoney(revenue);
+
+  // Status
+  const statusEl = document.getElementById('status-bar');
+  if (brandRoasNeeded <= 0) {
+    statusEl.className = 'status-bar fail';
+    statusEl.textContent = '✗ Nonbrand ROAS alone exceeds target — no brand spend needed to hit 30% CAC, but check if NB ROAS assumption is realistic';
+  } else if (brandRoasNeeded <= 5) {
+    statusEl.className = 'status-bar pass';
+    statusEl.textContent = `✓ Achievable — Brand needs ${fmt(brandRoasNeeded)}× ROAS. Typical brand campaigns run 5–15×, so this is very realistic.`;
+  } else if (brandRoasNeeded <= 10) {
+    statusEl.className = 'status-bar pass';
+    statusEl.textContent = `✓ Realistic — Brand needs ${fmt(brandRoasNeeded)}× ROAS. Strong but achievable for well-optimised brand campaigns.`;
+  } else if (brandRoasNeeded <= 15) {
+    statusEl.className = 'status-bar warn';
+    statusEl.textContent = `⚠ Stretch — Brand needs ${fmt(brandRoasNeeded)}× ROAS. Consider increasing nonbrand ROAS or reducing brand budget share.`;
+  } else {
+    statusEl.className = 'status-bar fail';
+    statusEl.textContent = `✗ Unrealistic — Brand needs ${fmt(brandRoasNeeded)}× ROAS. Nonbrand must perform better or budget mix must shift.`;
+  }
+
+  // Highlight matrix cell
+  document.querySelectorAll('#matrix-table td.highlight').forEach(el => el.classList.remove('highlight'));
+  const bpctRound = Math.round(brandPct * 100 / 10) * 10; // round to nearest 10 for display
+  const nbRound = NB_ROAS_COLS.reduce((prev, curr) => Math.abs(curr - nbRoas) < Math.abs(prev - nbRoas) ? curr : prev);
+  document.querySelectorAll('#matrix-table td').forEach(el => {
+    if (parseFloat(el.dataset.bpct) === Math.round(brandPct*100) &&
+        parseFloat(el.dataset.nb) === nbRound) {
+      el.classList.add('highlight');
+    }
+  });
+}
+
+buildMatrix();
+update();
+</script>
+</body>
+</html>
