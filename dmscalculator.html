@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>200% ROAS Target Calculator — Non-Branded Search</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #1f1f25;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0eff4;
+    --muted: #8b8a96;
+    --green: #22c98a;
+    --green-bg: rgba(34,201,138,0.1);
+    --green-border: rgba(34,201,138,0.25);
+    --amber: #f0a827;
+    --amber-bg: rgba(240,168,39,0.1);
+    --amber-border: rgba(240,168,39,0.25);
+    --red: #f05252;
+    --red-bg: rgba(240,82,82,0.1);
+    --red-border: rgba(240,82,82,0.25);
+    --accent: #7c6ff7;
+    --accent-light: rgba(124,111,247,0.15);
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-left h1 {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .header-left p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+  }
+  .header-badge {
+    background: var(--accent-light);
+    border: 1px solid rgba(124,111,247,0.3);
+    color: #a89ff9;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    min-height: calc(100vh - 81px);
+  }
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .main {
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow: hidden;
+  }
+  .section-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .week-btn {
+    padding: 8px 4px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .week-btn:hover { border-color: var(--accent); color: var(--text); }
+  .week-btn.active {
+    background: var(--accent-light);
+    border-color: rgba(124,111,247,0.5);
+    color: #a89ff9;
+  }
+  .week-detail {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border-left: 2px solid var(--accent);
+  }
+  .input-group { margin-bottom: 18px; }
+  .input-group:last-child { margin-bottom: 0; }
+  .input-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .input-label .val {
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    font-size: 13px;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    transition: transform 0.1s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 2px;
+  }
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .metric-val { font-size: 22px; font-weight: 500; letter-spacing: -0.5px; line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .metric-card.green { border-color: var(--green-border); background: var(--green-bg); }
+  .metric-card.amber { border-color: var(--amber-border); background: var(--amber-bg); }
+  .metric-card.red   { border-color: var(--red-border);   background: var(--red-bg);   }
+  .c-green { color: var(--green); }
+  .c-amber { color: var(--amber); }
+  .c-red   { color: var(--red); }
+  .formula-bar {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    line-height: 1.6;
+  }
+  .target-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .target-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+  }
+  .target-card .t-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .target-card .t-val { font-size: 26px; font-weight: 500; letter-spacing: -0.5px; }
+  .target-card .t-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .target-card.green { border-color: var(--green-border); }
+  .target-card.red   { border-color: var(--red-border); }
+  .table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-weight: 500;
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  th:first-child { text-align: left; }
+  td {
+    padding: 7px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  td:first-child { text-align: left; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; }
+  tr:last-child td { border-bottom: none; }
+  tr.hl { background: rgba(124,111,247,0.05); }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+  .pill-g { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .pill-a { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .pill-r { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .cell-hot { background: rgba(124,111,247,0.12) !important; font-weight: 600; }
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .action-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+  }
+  .action-item.green { background: var(--green-bg); border-color: var(--green-border); }
+  .action-item.amber { background: var(--amber-bg); border-color: var(--amber-border); }
+  .action-item.red   { background: var(--red-bg);   border-color: var(--red-border); }
+  .action-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .action-dot.green { background: var(--green); }
+  .action-dot.amber { background: var(--amber); }
+  .action-dot.red   { background: var(--red); }
+  .action-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .action-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .action-title.green { color: var(--green); }
+  .action-title.amber { color: var(--amber); }
+  .action-title.red   { color: var(--red); }
+  .divider { border: none; border-top: 1px solid var(--border); }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .header { padding: 20px; }
+    .main { padding: 20px; }
+    .metrics-grid { grid-template-columns: 1fr; }
+    .target-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>200% ROAS Target Calculator</h1>
+    <p>Non-Branded Paid Search — Waterfall Logic</p>
+  </div>
+  <div class="header-badge">Ziplines Education</div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div>
+      <div class="section-label">Week of month</div>
+      <div class="week-grid">
+        <button class="week-btn" data-w="1" onclick="setWeek(1)">Wk 1</button>
+        <button class="week-btn active" data-w="2" onclick="setWeek(2)">Wk 2</button>
+        <button class="week-btn" data-w="3" onclick="setWeek(3)">Wk 3</button>
+        <button class="week-btn" data-w="4" onclick="setWeek(4)">Wk 4</button>
+      </div>
+      <div class="week-detail" id="week-detail"></div>
+    </div>
+
+    <div>
+      <div class="section-label">Live inputs</div>
+
+      <div class="input-group">
+        <div class="input-label">D1 registration rate <span class="val" id="reg-o">14.0%</span></div>
+        <input type="range" min="4" max="20" step="0.5" value="14" id="reg-s" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Cost per D1 registration <span class="val" id="cpr-o">$500</span></div>
+        <input type="range" min="300" max="2500" step="25" value="500" id="cpr-s" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label">D1 enrollment rate <span class="val" id="enrol-o">1.00%</span></div>
+        <input type="range" min="0" max="5" step="0.05" value="1" id="enrol-s" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label">ARPU <span class="val" id="arpu-o">$2,350</span></div>
+        <input type="range" min="1800" max="2800" step="50" value="2350" id="arpu-s" oninput="update()">
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border-radius:var(--radius-lg);padding:14px 16px;border:1px solid var(--border)">
+      <div class="section-label" style="margin-bottom:10px">How it works</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7">
+        <strong style="color:var(--text)">Spend</strong> = D1 Regs × CPR<br>
+        <strong style="color:var(--text)">Revenue</strong> = (D1 Enrol ÷ Lag) × ARPU<br>
+        <strong style="color:var(--text)">ROAS</strong> = Revenue ÷ Spend × 100<br><br>
+        ROAS target is on <strong style="color:var(--text)">total enrollments</strong> not Day 1 only. The lag factor adjusts for how far through the month you are.
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div>
+      <div class="section-label">ROAS position — D1 signal vs projected total</div>
+      <div class="metrics-grid" id="metrics"></div>
+      <div class="formula-bar" id="formula" style="margin-top:10px"></div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="section-label">To hit 200% ROAS on total enrollments</div>
+      <div class="target-grid" id="targets"></div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="section-label">Lookup — minimum D1 enrollment rate for 200% ROAS (week <span id="wk-lbl">2</span>)</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Your CPR band and registration rate are highlighted. Green = achievable, amber = stretch, red = requires above-average performance.</div>
+      <div class="table-wrap"><table id="lookup"></table></div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="section-label">Action guide</div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const WEEKS = {
+  1:{lag:0.40,enrolRange:'0.7–1.0%',desc:'Week 1 — furthest from cohort. ~40% of total enrollments visible on Day 1. Judge on CPR and registration rate as leading indicators.'},
+  2:{lag:0.55,enrolRange:'0.9–1.3%',desc:'Week 2 — ~55% of total enrollments captured by Day 1. Urgency starting to build. Watch CPR closely.'},
+  3:{lag:0.75,enrolRange:'1.2–1.7%',desc:'Week 3 — ~75% of total enrollments visible. Strong signal now available. Act on gaps quickly.'},
+  4:{lag:1.00,enrolRange:'1.5–2.5%',desc:'Week 4 — cohort imminent. D1 ≈ total enrollments. Full signal — what you see is what you get.'}
+};
+let week=2;
+
+function fmt$(n){return '$'+Math.round(n).toLocaleString();}
+function fmtPct(n,d=2){return n.toFixed(d)+'%';}
+function sc(r){return r>=200?'green':r>=120?'amber':'red';}
+function pillCls(r){return r>=200?'pill-g':r>=120?'pill-a':'pill-r';}
+function pillTxt(r){return r>=200?'on track':r>=120?'below target':'off target';}
+
+function setWeek(w){
+  week=w;
+  document.querySelectorAll('.week-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.w)===w));
+  document.getElementById('week-detail').textContent=WEEKS[w].desc;
+  document.getElementById('wk-lbl').textContent=w;
+  update();
+}
+
+function update(){
+  const reg=parseFloat(document.getElementById('reg-s').value);
+  const cpr=parseFloat(document.getElementById('cpr-s').value);
+  const enrol=parseFloat(document.getElementById('enrol-s').value);
+  const arpu=parseFloat(document.getElementById('arpu-s').value);
+  const lag=WEEKS[week].lag;
+
+  document.getElementById('reg-o').textContent=fmtPct(reg,1);
+  document.getElementById('cpr-o').textContent=fmt$(cpr);
+  document.getElementById('enrol-o').textContent=fmtPct(enrol,2);
+  document.getElementById('arpu-o').textContent=fmt$(arpu);
+
+  const deals=100;
+  const regs=deals*reg/100;
+  const spend=regs*cpr;
+  const d1e=deals*enrol/100;
+  const totE=d1e/lag;
+  const totRev=totE*arpu;
+  const roasTotal=spend>0?totRev/spend*100:0;
+  const d1Roas=spend>0?(d1e*arpu)/spend*100:0;
+  const implCPE=totE>0?spend/totE:0;
+  const reqCPE=arpu/2;
+  const reqD1=2*(reg/100)*cpr/arpu*lag*100;
+  const enrolGap=reqD1-enrol;
+  const sc_roas=sc(roasTotal);
+  const sc_d1=sc(d1Roas);
+  const sc_cpe=implCPE>0&&implCPE<=reqCPE?'green':implCPE>0?'red':'amber';
+
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric-card ${sc_d1}">
+      <div class="metric-label">D1 ROAS signal</div>
+      <div class="metric-val c-${sc_d1}">${Math.round(d1Roas)}%</div>
+      <div class="metric-sub">D1 enrollments only</div>
+    </div>
+    <div class="metric-card ${sc_roas}">
+      <div class="metric-label">Projected total ROAS</div>
+      <div class="metric-val c-${sc_roas}">${Math.round(roasTotal)}%</div>
+      <div class="metric-sub"><span class="pill ${pillCls(roasTotal)}">${pillTxt(roasTotal)}</span></div>
+    </div>
+    <div class="metric-card ${sc_cpe}">
+      <div class="metric-label">Projected total CPE</div>
+      <div class="metric-val c-${sc_cpe}">${totE>0?fmt$(implCPE):'—'}</div>
+      <div class="metric-sub">ceiling ${fmt$(reqCPE)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Proj. total enrollments</div>
+      <div class="metric-val">${totE.toFixed(1)}</div>
+      <div class="metric-sub">per 100 prospects (÷${(lag*100).toFixed(0)}% lag)</div>
+    </div>
+  `;
+
+  document.getElementById('formula').innerHTML=
+    `<span style="color:var(--accent)">Total ROAS</span> = (${fmtPct(enrol,2)} D1 enrol ÷ ${(lag*100).toFixed(0)}% lag × ${fmt$(arpu)} ARPU) ÷ (${fmtPct(reg,1)} reg × ${fmt$(cpr)} CPR) × 100 = <strong style="color:var(--text)">${Math.round(roasTotal)}%</strong>`;
+
+  const tc_enrol=enrol>=reqD1?'green':'red';
+  const tc_cpe=implCPE>0&&implCPE<=reqCPE?'green':'red';
+  document.getElementById('targets').innerHTML=`
+    <div class="target-card ${tc_enrol}">
+      <div class="t-label">Required D1 enrollment rate</div>
+      <div class="t-val c-${tc_enrol}">${fmtPct(reqD1,2)}</div>
+      <div class="t-sub">${enrol>=reqD1?'✓ You\'re at '+fmtPct(enrol,2)+' — above target':'You\'re at '+fmtPct(enrol,2)+' — need +'+fmtPct(Math.abs(enrolGap),2)+' more'}</div>
+    </div>
+    <div class="target-card ${tc_cpe}">
+      <div class="t-label">Max total CPE to hit 200%</div>
+      <div class="t-val c-${tc_cpe}">${fmt$(reqCPE)}</div>
+      <div class="t-sub">${totE>0?(implCPE<=reqCPE?'✓ Projected '+fmt$(implCPE)+' — within ceiling':'Projected '+fmt$(implCPE)+' — over by '+fmt$(implCPE-reqCPE)):'No D1 enrollments yet'}</div>
+    </div>
+  `;
+
+  buildLookup(reg,cpr,arpu,lag);
+  buildActions(reg,cpr,enrol,arpu,lag,roasTotal,reqD1,implCPE,reqCPE,d1e);
+}
+
+function buildLookup(curReg,curCPR,arpu,lag){
+  const cprs=[400,500,600,700,900,1100,1400,1800,2200];
+  const regs=[6,8,10,12,14,16,18];
+  let h='<tr><th>CPR / Reg rate →</th>';
+  regs.forEach(r=>h+=`<th>${r}%</th>`);
+  h+='</tr>';
+  cprs.forEach(cpr=>{
+    const nearCPR=Math.abs(cpr-curCPR)<180;
+    h+=nearCPR?'<tr class="hl">':'<tr>';
+    h+=`<td>${fmt$(cpr)}</td>`;
+    regs.forEach(reg=>{
+      const req=2*(reg/100)*cpr/arpu*lag*100;
+      const nearReg=Math.abs(reg-curReg)<1.5;
+      const hot=nearCPR&&nearReg;
+      const cls=req<=0.8?'pill-g':req<=1.6?'pill-a':'pill-r';
+      h+=`<td class="${hot?'cell-hot':''}"><span class="pill ${cls}">${req.toFixed(2)}%</span></td>`;
+    });
+    h+='</tr>';
+  });
+  document.getElementById('lookup').innerHTML=h;
+}
+
+function buildActions(reg,cpr,enrol,arpu,lag,roasTotal,reqD1,implCPE,reqCPE,d1e){
+  const items=[];
+
+  if(roasTotal>=200){
+    items.push({s:'green',t:'On track for 200% ROAS',d:`Projected total ROAS ${Math.round(roasTotal)}%. Maintain current spend levels and monitor enrollment rate as the cohort progresses.`});
+  } else if(roasTotal>=120){
+    items.push({s:'amber',t:'Approaching target — monitor closely',d:`${Math.round(200-roasTotal)}pp short of 200%. Small improvement in enrollment rate or CPR reduction would close the gap before month end.`});
+  } else {
+    items.push({s:'red',t:'Below target — action needed',d:`${Math.round(200-roasTotal)}pp short of 200% ROAS. Review keyword quality, consider pausing low-converting terms, check if cohort timing is a factor.`});
+  }
+
+  const cprTarget=600;
+  if(cpr<=cprTarget){
+    items.push({s:'green',t:'CPR is strong',d:`${fmt$(cpr)} CPR is below the ${fmt$(cprTarget)} efficiency threshold. Reducing further would directly improve projected CPE — even small CPR gains multiply across all registrations.`});
+  } else if(cpr<=1000){
+    items.push({s:'amber',t:'CPR has room to improve',d:`${fmt$(cpr)} CPR is manageable but reducing toward ${fmt$(cprTarget)} would meaningfully lower your CPE ceiling. Negative keyword refinements should help here.`});
+  } else {
+    items.push({s:'red',t:'CPR is elevated — priority action',d:`${fmt$(cpr)} CPR is significantly above efficiency threshold. Each registration costs ${fmt$(cpr-cprTarget)} more than target. Pause high-CPR keywords and tighten match types.`});
+  }
+
+  if(d1e===0){
+    items.push({s:'amber',t:'No D1 enrollments yet',d:`Too early to project CPE. Registration rate and CPR are your key leading indicators right now. ${reg>=10?'Registration rate looks healthy.':'Watch registration rate — below 10% is a concern.'}`});
+  } else if(implCPE<=reqCPE){
+    items.push({s:'green',t:'Projected CPE within ceiling',d:`${fmt$(implCPE)} projected total CPE vs ${fmt$(reqCPE)} ceiling. Good position — enrollments are converting at a cost that supports 200% ROAS.`});
+  } else {
+    const cprNeeded=(reqCPE*lag*arpu)/(2*arpu*(reg/100));
+    items.push({s:'red',t:'Projected CPE above ceiling',d:`${fmt$(implCPE)} projected vs ${fmt$(reqCPE)} ceiling. To fix: either enrollment rate needs to reach ${reqD1.toFixed(2)}%, or CPR needs to fall to approx. ${fmt$(cprNeeded)}.`});
+  }
+
+  document.getElementById('actions').innerHTML=items.map(i=>`
+    <div class="action-item ${i.s}">
+      <div class="action-dot ${i.s}"></div>
+      <div>
+        <div class="action-title ${i.s}">${i.t}</div>
+        <div class="action-desc">${i.d}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+setWeek(2);
+</script>
+</body>
+</html>
