@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blended ROAS Calculator — Ziplines Education</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0f11;--surface:#18181c;--surface2:#1f1f25;--surface3:#242429;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0eff4;--muted:#8b8a96;--muted2:#6a6975;
+  --green:#22c98a;--green-bg:rgba(34,201,138,0.1);--green-b:rgba(34,201,138,0.25);
+  --amber:#f0a827;--amber-bg:rgba(240,168,39,0.1);--amber-b:rgba(240,168,39,0.25);
+  --red:#f05252;--red-bg:rgba(240,82,82,0.1);--red-b:rgba(240,82,82,0.25);
+  --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.1);--blue-b:rgba(59,130,246,0.25);
+  --purple:#7c6ff7;--purple-bg:rgba(124,111,247,0.12);--purple-b:rgba(124,111,247,0.3);
+  --teal:#14b8a6;--teal-bg:rgba(20,184,166,0.1);--teal-b:rgba(20,184,166,0.25);
+  --pink:#e879a0;--pink-bg:rgba(232,121,160,0.1);--pink-b:rgba(232,121,160,0.25);
+  --orange:#f97316;--orange-bg:rgba(249,115,22,0.1);--orange-b:rgba(249,115,22,0.25);
+  --r:10px;--rl:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* HEADER */
+.hdr{border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hdr-left h1{font-size:17px;font-weight:500;letter-spacing:-0.3px}
+.hdr-left p{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.co-badge{font-size:10px;font-family:'DM Mono',monospace;padding:3px 10px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;background:var(--purple-bg);border:1px solid var(--purple-b);color:#a89ff9}
+
+/* PROGRAM TABS */
+.prog-tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.prog-tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:all 0.15s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
+.prog-tab:hover{color:var(--text)}
+.prog-tab.active-AIP{border-bottom-color:var(--teal);color:#5eead4}
+.prog-tab.active-PJM{border-bottom-color:var(--purple);color:#a89ff9}
+.prog-tab.active-DMS{border-bottom-color:var(--orange);color:#fb923c}
+.prog-tab.active-BAS{border-bottom-color:var(--pink);color:#f9a8d4}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:340px 1fr;min-height:calc(100vh - 105px)}
+.sidebar{border-right:1px solid var(--border);padding:20px 18px;display:flex;flex-direction:column;gap:18px;overflow-y:auto}
+.main{padding:20px 24px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+
+/* SIDEBAR SECTIONS */
+.sb-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:13px 15px}
+.sb-title{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.sb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-brand{background:var(--amber)}.dot-nb{background:var(--blue)}.dot-blended{background:var(--purple)}
+
+/* RANGE INPUTS */
+.ig{margin-bottom:13px}.ig:last-child{margin-bottom:0}
+.il{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:4px}
+.il .v{font-family:'DM Mono',monospace;color:var(--text);font-size:13px;white-space:nowrap}
+.il .hint{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted2);font-style:italic}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--surface2);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--purple);cursor:pointer;border:2px solid var(--bg);transition:transform 0.1s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.brand-inp input[type=range]::-webkit-slider-thumb{background:var(--amber)}
+.nb-inp input[type=range]::-webkit-slider-thumb{background:var(--blue)}
+.split-inp input[type=range]::-webkit-slider-thumb{background:var(--purple)}
+
+/* SPLIT VISUAL */
+.split-bar{height:8px;border-radius:4px;overflow:hidden;display:flex;margin-top:6px}
+.split-brand{background:var(--amber);height:100%;transition:width 0.2s}
+.split-nb{background:var(--blue);height:100%;transition:width 0.2s}
+
+/* WEEK BTNS */
+.week-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}
+.wbtn{padding:6px 4px;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;text-align:center;transition:all 0.15s}
+.wbtn:hover{border-color:var(--purple);color:var(--text)}
+.wbtn.active{background:var(--purple-bg);border-color:var(--purple-b);color:#a89ff9}
+.week-note{font-size:11px;color:var(--muted);line-height:1.5;padding:8px 11px;background:var(--surface2);border-radius:var(--r);border-left:2px solid var(--purple)}
+
+/* BENCHMARK TABLE */
+.bm-table{width:100%;font-size:11px;border-collapse:collapse}
+.bm-table th{font-family:'DM Mono',monospace;font-weight:500;color:var(--muted2);padding:3px 6px;text-align:right;font-size:10px}
+.bm-table th:first-child{text-align:left}
+.bm-table td{padding:4px 6px;text-align:right;border-top:1px solid var(--border);font-family:'DM Mono',monospace}
+.bm-table td:first-child{text-align:left;color:var(--muted);font-family:'DM Sans',sans-serif}
+.bm-g{color:var(--green)}.bm-a{color:var(--amber)}.bm-r{color:var(--red)}.bm-n{color:var(--muted)}
+
+/* BLENDED DASHBOARD */
+.blended-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px}
+.blended-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.bc{background:var(--surface2);border-radius:var(--r);padding:12px 14px;border:1px solid var(--border)}
+.bc.highlight{border-color:var(--purple-b);background:var(--purple-bg)}
+.bc .bl{font-size:10px;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace;letter-spacing:0.3px}
+.bc .bv{font-size:20px;font-weight:500;letter-spacing:-0.4px;line-height:1}
+.bc .bs{font-size:11px;color:var(--muted);margin-top:4px}
+.req-nb-bar{margin-top:14px;padding:10px 14px;border-radius:var(--r);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.req-nb-bar.green{background:var(--green-bg);border:1px solid var(--green-b)}
+.req-nb-bar.amber{background:var(--amber-bg);border:1px solid var(--amber-b)}
+.req-nb-bar.red{background:var(--red-bg);border:1px solid var(--red-b)}
+.req-label{font-size:12px;color:var(--muted)}
+.req-val{font-size:18px;font-weight:500;font-family:'DM Mono',monospace}
+
+/* SECTION LABEL */
+.slabel{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
+/* METRICS GRIDS */
+.m4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.m3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:12px 14px}
+.mc.green{border-color:var(--green-b);background:var(--green-bg)}
+.mc.amber{border-color:var(--amber-b);background:var(--amber-bg)}
+.mc.red{border-color:var(--red-b);background:var(--red-bg)}
+.mc.blue{border-color:var(--blue-b);background:var(--blue-bg)}
+.mc .ml{font-size:11px;color:var(--muted);margin-bottom:4px}
+.mc .mv{font-size:20px;font-weight:500;letter-spacing:-0.4px;line-height:1}
+.mc .ms{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* COLORS */
+.c-green{color:var(--green)}.c-amber{color:var(--amber)}.c-red{color:var(--red)}
+.c-blue{color:#93c5fd}.c-purple{color:#a89ff9}.c-teal{color:#5eead4}
+.c-orange{color:#fb923c}.c-pink{color:#f9a8d4}
+
+/* FORMULA BAR */
+.fbar{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;line-height:1.8}
+
+/* LEVERS */
+.lev3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.lv{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:13px 15px}
+.lv.green{border-color:var(--green-b)}.lv.amber{border-color:var(--amber-b)}.lv.red{border-color:var(--red-b)}
+.lv .lt{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:0.7px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.lv .lval{font-size:19px;font-weight:500;letter-spacing:-0.4px;margin-bottom:3px}
+.lv .ldesc{font-size:11px;color:var(--muted);line-height:1.5}
+.lv .ldelta{font-size:11px;font-family:'DM Mono',monospace;margin-top:5px}
+
+/* TABLE */
+.tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:var(--surface2);color:var(--muted);font-weight:500;padding:6px 7px;text-align:center;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;white-space:nowrap}
+th:first-child{text-align:left;min-width:100px}
+td{padding:5px 7px;text-align:center;border-bottom:1px solid var(--border)}
+td:first-child{text-align:left;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px}
+tr:last-child td{border-bottom:none}
+tr.hlr{background:rgba(124,111,247,0.04)}
+.pill{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
+.pa{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b)}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid var(--red-b)}
+.cell-cur{background:rgba(124,111,247,0.18)!important;font-weight:600;outline:1px solid rgba(124,111,247,0.4)}
+
+/* ACTIONS */
+.acts{display:flex;flex-direction:column;gap:7px}
+.ai{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;border-radius:var(--r);border:1px solid transparent}
+.ai.green{background:var(--green-bg);border-color:var(--green-b)}
+.ai.amber{background:var(--amber-bg);border-color:var(--amber-b)}
+.ai.red{background:var(--red-bg);border-color:var(--red-b)}
+.ai-dot{width:6px;height:6px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.ai-dot.green{background:var(--green)}.ai-dot.amber{background:var(--amber)}.ai-dot.red{background:var(--red)}
+.ai-t{font-size:12px;font-weight:500;margin-bottom:2px}
+.ai-t.green{color:var(--green)}.ai-t.amber{color:var(--amber)}.ai-t.red{color:var(--red)}
+.ai-d{font-size:11px;color:var(--muted);line-height:1.5}
+
+.divider{border:none;border-top:1px solid var(--border)}
+.tnote{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5}
+
+@media(max-width:980px){.layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid var(--border)}.blended-grid{grid-template-columns:1fr 1fr}.m4{grid-template-columns:1fr 1fr}.lev3{grid-template-columns:1fr}}
+@media(max-width:600px){.hdr{padding:14px 18px}.main{padding:14px 16px}.blended-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>Blended ROAS Calculator</h1>
+    <p>Brand + Non-Branded — Monthly Target: 350% Blended ROAS</p>
+  </div>
+  <div class="hdr-right">
+    <div class="co-badge">Ziplines Education</div>
+  </div>
+</div>
+
+<!-- PROGRAM TABS -->
+<div class="prog-tabs">
+  <button class="prog-tab" data-p="AIP" onclick="setProg('AIP')">AIP — AI Programs</button>
+  <button class="prog-tab" data-p="PJM" onclick="setProg('PJM')">PJM — Project Management</button>
+  <button class="prog-tab" data-p="DMS" onclick="setProg('DMS')">DMS — Digital Marketing</button>
+  <button class="prog-tab" data-p="BAS" onclick="setProg('BAS')">BAS — Business &amp; Analytics</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+
+    <!-- BUDGET SPLIT -->
+    <div class="sb-section split-inp">
+      <div class="sb-title"><div class="sb-dot dot-blended"></div>Budget split &amp; blended target</div>
+      <div class="ig">
+        <div class="il"><span>Brand budget share</span><span class="v" id="split-o">50% brand / 50% NB</span></div>
+        <input type="range" min="10" max="90" step="5" value="50" id="split-s" oninput="update()">
+        <div class="split-bar" style="margin-top:8px">
+          <div class="split-brand" id="split-brand-bar" style="width:50%"></div>
+          <div class="split-nb" style="flex:1"></div>
+        </div>
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <div class="il"><span>Blended ROAS target</span><span class="v" id="blend-tgt-o">350%</span></div>
+        <input type="range" min="150" max="600" step="25" value="350" id="blend-tgt-s" oninput="update()">
+      </div>
+    </div>
+
+    <!-- BRAND INPUTS -->
+    <div class="sb-section brand-inp">
+      <div class="sb-title"><div class="sb-dot dot-brand"></div>Brand — this week's actuals</div>
+      <div class="ig">
+        <div class="il"><span>Brand spend this week</span><span class="v" id="b-spend-o">$7,000</span></div>
+        <input type="range" min="1000" max="30000" step="500" value="7000" id="b-spend-s" oninput="update()">
+      </div>
+      <div class="ig">
+        <div class="il"><span>Brand ROAS (projected total)</span><span class="v" id="b-roas-o">450%</span></div>
+        <input type="range" min="50" max="1000" step="25" value="450" id="b-roas-s" oninput="update()">
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <div class="il"><span>Brand target ROAS</span><span class="v" id="b-tgt-o">450%</span></div>
+        <input type="range" min="100" max="800" step="25" value="450" id="b-tgt-s" oninput="update()">
+      </div>
+    </div>
+
+    <!-- WEEK -->
+    <div class="sb-section">
+      <div class="sb-title">Week of month</div>
+      <div class="week-row">
+        <button class="wbtn" data-w="1" onclick="setWeek(1)">Wk 1</button>
+        <button class="wbtn active" data-w="2" onclick="setWeek(2)">Wk 2</button>
+        <button class="wbtn" data-w="3" onclick="setWeek(3)">Wk 3</button>
+        <button class="wbtn" data-w="4" onclick="setWeek(4)">Wk 4</button>
+      </div>
+      <div class="week-note" id="week-note"></div>
+    </div>
+
+    <!-- NON-BRAND INPUTS -->
+    <div class="sb-section nb-inp">
+      <div class="sb-title"><div class="sb-dot dot-nb"></div>Non-brand — spend side <span style="font-size:10px;font-weight:400;color:var(--muted2)">(use total figures)</span></div>
+      <div class="ig">
+        <div class="il">Total prospects<span class="v" id="pros-o">100</span></div>
+        <input type="range" min="20" max="300" step="1" value="100" id="pros-s" oninput="update()">
+      </div>
+      <div class="ig">
+        <div class="il"><span>Total reg rate <span class="hint">(all regs ÷ prospects)</span></span><span class="v" id="treg-o">12.0%</span></div>
+        <input type="range" min="2" max="30" step="0.5" value="12" id="treg-s" oninput="update()">
+      </div>
+      <div class="ig">
+        <div class="il"><span>Total CPR <span class="hint">(spend ÷ total regs)</span></span><span class="v" id="tcpr-o">$700</span></div>
+        <input type="range" min="150" max="2500" step="25" value="700" id="tcpr-s" oninput="update()">
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <div class="il"><span>D1 reg rate <span class="hint">(Day 1 only)</span></span><span class="v" id="d1reg-o">10.0%</span></div>
+        <input type="range" min="2" max="25" step="0.5" value="10" id="d1reg-s" oninput="update()">
+      </div>
+    </div>
+
+    <div class="sb-section nb-inp">
+      <div class="sb-title"><div class="sb-dot" style="background:var(--green)"></div>Non-brand — revenue side</div>
+      <div class="ig">
+        <div class="il"><span>D1 enrollment rate <span class="hint">(D1 enrols ÷ prospects)</span></span><span class="v" id="enrol-o">1.00%</span></div>
+        <input type="range" min="0" max="5" step="0.05" value="1" id="enrol-s" oninput="update()">
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <div class="il">ARPU<span class="v" id="arpu-o">$2,400</span></div>
+        <input type="range" min="1800" max="3000" step="50" value="2400" id="arpu-s" oninput="update()">
+      </div>
+    </div>
+
+    <!-- BENCHMARKS -->
+    <div class="sb-section">
+      <div class="sb-title" id="bm-title">Program benchmarks</div>
+      <table class="bm-table">
+        <thead><tr><th>Metric</th><th>Best/P75</th><th>Med/Avg</th><th>Warn</th></tr></thead>
+        <tbody id="bm-body"></tbody>
+      </table>
+      <div style="font-size:10px;color:var(--muted2);margin-top:6px;font-family:'DM Mono',monospace">54-week dataset. Enrol rows: P75 / median / caution.</div>
+      <div id="bm-note" style="font-size:11px;color:var(--amber);margin-top:6px;line-height:1.4;padding:6px 8px;background:var(--amber-bg);border-radius:var(--r);border:1px solid var(--amber-b);display:none"></div>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <!-- BLENDED DASHBOARD -->
+    <div class="blended-bar">
+      <div class="slabel">Blended performance — brand + non-brand</div>
+      <div class="blended-grid" id="blend-cards"></div>
+      <div class="req-nb-bar green" id="req-nb-bar">
+        <div>
+          <div class="req-label">Required non-brand ROAS to hit <span id="blend-tgt-label">350%</span> blended</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px" id="blend-formula"></div>
+        </div>
+        <div class="req-val" id="req-nb-val">200%</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NB METRICS -->
+    <div>
+      <div class="slabel">Non-brand — spend &amp; projected ROAS</div>
+      <div class="m4" id="nb-metrics"></div>
+      <div class="fbar" id="nb-formula" style="margin-top:9px"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REG LAG -->
+    <div>
+      <div class="slabel">Registration lag — D1 vs total</div>
+      <div class="m4" id="reg-lag"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- LEVERS -->
+    <div>
+      <div class="slabel">Three levers — <span id="lev-label">to hit required NB ROAS</span></div>
+      <div class="lev3" id="levers"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- TABLE -->
+    <div>
+      <div class="slabel">ROAS outcome table — total CPR vs D1 enrollment rate at <span id="tbl-pros">100</span> prospects, <span id="tbl-reg">12.0</span>% total reg rate</div>
+      <div class="tnote" id="tnote"></div>
+      <div class="tw"><table id="lookup"></table></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ACTIONS -->
+    <div>
+      <div class="slabel">Action guide</div>
+      <div class="acts" id="actions"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ─── PROGRAM CONFIG ──────────────────────────────────────────────────────────
+const PROGS = {
+  AIP:{
+    label:'AIP — AI Programs', color:'var(--teal)', colorCls:'c-teal',
+    pros_default:100, treg_default:12, tcpr_default:700, d1reg_default:10,
+    enrol_default:1.44, arpu_default:2350,
+    bench:{
+      cpr_best:497, cpr_avg:780, cpr_warn:1200,
+      reg_best:14.6, reg_avg:10.4, reg_med:9.9, reg_warn:7,
+      enrol_best:7.32, enrol_avg:1.83, enrol_med:1.66, enrol_p25:0.99, enrol_p75:2.35, enrol_warn:0.8,
+      enrol_note:'54-week avg 1.83% (median 1.66%). Weeks with D1 enrol: 25/54. Recent 8-wk avg: 1.44%.',
+      arpu_avg:2350
+    }
+  },
+  PJM:{
+    label:'PJM — Project Management', color:'var(--purple)', colorCls:'c-purple',
+    pros_default:140, treg_default:11, tcpr_default:856, d1reg_default:11.5,
+    enrol_default:1.10, arpu_default:2500,
+    bench:{
+      cpr_best:522, cpr_avg:856, cpr_warn:1100,
+      reg_best:22.9, reg_avg:13.4, reg_med:13.4, reg_warn:8,
+      enrol_best:4.29, enrol_avg:1.42, enrol_med:0.84, enrol_p25:0.67, enrol_p75:1.81, enrol_warn:0.5,
+      enrol_note:'54-week avg 1.42% but median only 0.84% — high volatility. Use median as realistic target. Weeks with D1 enrol: 29/54.',
+      arpu_avg:2500
+    }
+  },
+  DMS:{
+    label:'DMS — Digital Marketing', color:'var(--orange)', colorCls:'c-orange',
+    pros_default:90, treg_default:13, tcpr_default:650, d1reg_default:11,
+    enrol_default:1.31, arpu_default:2200,
+    bench:{
+      cpr_best:480, cpr_avg:720, cpr_warn:1000,
+      reg_best:18.0, reg_avg:13.4, reg_med:10.8, reg_warn:8,
+      enrol_best:2.90, enrol_avg:1.30, enrol_med:1.19, enrol_p25:1.02, enrol_p75:1.54, enrol_warn:0.7,
+      enrol_note:'54-week avg 1.30% (median 1.19%). Most consistent program — tight IQR of 1.02–1.54%. Weeks with D1 enrol: 22/54.',
+      arpu_avg:2200
+    }
+  },
+  BAS:{
+    label:'BAS — Business & Analytics', color:'var(--pink)', colorCls:'c-pink',
+    pros_default:85, treg_default:13, tcpr_default:600, d1reg_default:12,
+    enrol_default:1.51, arpu_default:2300,
+    bench:{
+      cpr_best:450, cpr_avg:680, cpr_warn:950,
+      reg_best:17.0, reg_avg:14.2, reg_med:10.9, reg_warn:8,
+      enrol_best:3.13, enrol_avg:1.66, enrol_med:1.51, enrol_p25:1.33, enrol_p75:2.37, enrol_warn:0.8,
+      enrol_note:'54-week avg 1.66% (median 1.51%). NOTE: No D1 enrollments in last 8 weeks — cohort timing may be a factor. Weeks with D1 enrol: 12/54.',
+      arpu_avg:2300
+    }
+  }
+};
+
+const WEEKS={
+  1:{lag:0.40,note:'Week 1 — furthest from cohort. ~40% of final enrollments visible on Day 1. Lead with CPR and total reg rate as signals.'},
+  2:{lag:0.55,note:'Week 2 — ~55% of final enrollments on Day 1. Urgency building. Gap between D1 CPR and total CPR will narrow as post-D1 registrations come in.'},
+  3:{lag:0.75,note:'Week 3 — ~75% of final enrollments visible. Strong signal now — act quickly on any gaps.'},
+  4:{lag:1.00,note:'Week 4 — cohort imminent. D1 ≈ total. Full signal available — what you see is what you get.'}
+};
+
+let prog='AIP', week=2;
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const f$=n=>'$'+Math.round(n).toLocaleString();
+const fp=(n,d=2)=>n.toFixed(d)+'%';
+const sc=r=>r>=200?'green':r>=120?'amber':'red';
+const pc=r=>r>=200?'pg':r>=120?'pa':'pr';
+const pt=r=>r>=200?'✓ on track':r>=120?'below target':'off target';
+
+// ─── PROGRAM SWITCH ───────────────────────────────────────────────────────────
+function setProg(p){
+  prog=p;
+  document.querySelectorAll('.prog-tab').forEach(t=>{
+    t.className='prog-tab'+(t.dataset.p===p?' active-'+p:'');
+  });
+  const cfg=PROGS[p];
+  document.getElementById('pros-s').value=cfg.pros_default;
+  document.getElementById('treg-s').value=cfg.treg_default;
+  document.getElementById('tcpr-s').value=cfg.tcpr_default;
+  document.getElementById('d1reg-s').value=cfg.d1reg_default;
+  document.getElementById('enrol-s').value=cfg.enrol_default;
+  document.getElementById('arpu-s').value=cfg.arpu_default;
+  renderBenchmarks();
+  update();
+}
+
+function setWeek(w){
+  week=w;
+  document.querySelectorAll('.wbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.w)===w));
+  document.getElementById('week-note').textContent=WEEKS[w].note;
+  update();
+}
+
+function renderBenchmarks(){
+  const b=PROGS[prog].bench;
+  document.getElementById('bm-title').textContent=PROGS[prog].label.split('—')[0].trim()+' benchmarks';
+  document.getElementById('bm-body').innerHTML=`
+    <tr><td>Total CPR</td><td class="bm-g">${f$(b.cpr_best)}</td><td class="bm-n">${f$(b.cpr_avg)}</td><td class="bm-r">${f$(b.cpr_warn)}</td></tr>
+    <tr><td>D1 reg rate</td><td class="bm-g">${fp(b.reg_best,1)}</td><td class="bm-n">${fp(b.reg_med,1)}</td><td class="bm-r">${fp(b.reg_warn,0)}</td></tr>
+    <tr><td>D1 enrol (median)</td><td class="bm-g">${fp(b.enrol_p75,2)}</td><td class="bm-n">${fp(b.enrol_med,2)}</td><td class="bm-r">${fp(b.enrol_warn,2)}</td></tr>
+    <tr><td>D1 enrol (avg)</td><td class="bm-g">${fp(b.enrol_best,2)}</td><td class="bm-n">${fp(b.enrol_avg,2)}</td><td class="bm-r">—</td></tr>
+    <tr><td>ARPU</td><td class="bm-g">${f$(b.arpu_avg)}</td><td class="bm-n">—</td><td class="bm-n">—</td></tr>
+  `;
+  const noteEl = document.getElementById('bm-note');
+  noteEl.textContent = b.enrol_note || '';
+  noteEl.style.display = b.enrol_note ? 'block' : 'none';
+}
+
+// ─── MAIN UPDATE ─────────────────────────────────────────────────────────────
+function update(){
+  const splitBrand = parseFloat(document.getElementById('split-s').value)/100;
+  const splitNB    = 1-splitBrand;
+  const blendTgt   = parseFloat(document.getElementById('blend-tgt-s').value);
+  const bSpend     = parseFloat(document.getElementById('b-spend-s').value);
+  const bRoas      = parseFloat(document.getElementById('b-roas-s').value);
+  const bTgt       = parseFloat(document.getElementById('b-tgt-s').value);
+  const pros       = parseFloat(document.getElementById('pros-s').value);
+  const totReg     = parseFloat(document.getElementById('treg-s').value);
+  const totCPR     = parseFloat(document.getElementById('tcpr-s').value);
+  const d1Reg      = parseFloat(document.getElementById('d1reg-s').value);
+  const enrol      = parseFloat(document.getElementById('enrol-s').value);
+  const arpu       = parseFloat(document.getElementById('arpu-s').value);
+  const lag        = WEEKS[week].lag;
+
+  // Readouts
+  document.getElementById('split-o').textContent      = Math.round(splitBrand*100)+'% brand / '+Math.round(splitNB*100)+'% NB';
+  document.getElementById('split-brand-bar').style.width= (splitBrand*100)+'%';
+  document.getElementById('blend-tgt-o').textContent  = Math.round(blendTgt)+'%';
+  document.getElementById('b-spend-o').textContent    = f$(bSpend);
+  document.getElementById('b-roas-o').textContent     = Math.round(bRoas)+'%';
+  document.getElementById('b-tgt-o').textContent      = Math.round(bTgt)+'%';
+  document.getElementById('pros-o').textContent       = Math.round(pros);
+  document.getElementById('treg-o').textContent       = fp(totReg,1);
+  document.getElementById('tcpr-o').textContent       = f$(totCPR);
+  document.getElementById('d1reg-o').textContent      = fp(d1Reg,1);
+  document.getElementById('enrol-o').textContent      = fp(enrol,2);
+  document.getElementById('arpu-o').textContent       = f$(arpu);
+
+  // ── NB calculations ──
+  const totRegs = pros*totReg/100;
+  const nbSpend = totRegs*totCPR;
+  const d1Regs  = pros*d1Reg/100;
+  const d1e     = pros*enrol/100;
+  const totE    = d1e/lag;
+  const totRev  = totE*arpu;
+  const nbRoas  = nbSpend>0 ? totRev/nbSpend*100 : 0;
+  const d1Roas  = nbSpend>0 ? (d1e*arpu)/nbSpend*100 : 0;
+  const implCPE = totE>0 ? nbSpend/totE : 0;
+  const reqCPE  = arpu/2;
+
+  // ── Brand calculations ──
+  const bRev = bSpend * bRoas/100;
+
+  // ── Blended calculations ──
+  // Implied NB spend from budget split: if bSpend is the brand portion
+  // NB spend implied = bSpend * (splitNB/splitBrand)
+  const nbSpendImplied = splitBrand>0 ? bSpend*(splitNB/splitBrand) : nbSpend;
+  const totalSpendBlended = bSpend + nbSpendImplied;
+  const nbRevImplied = nbSpendImplied * nbRoas/100;
+  const totalRevBlended = bRev + nbRevImplied;
+  const blendedActual = totalSpendBlended>0 ? totalRevBlended/totalSpendBlended*100 : 0;
+
+  // Required NB ROAS: blendTgt = bRoas*splitBrand + reqNbRoas*splitNB
+  const reqNbRoas = splitNB>0 ? (blendTgt - bRoas*splitBrand) / splitNB : 0;
+  const nbGap = nbRoas - reqNbRoas;
+  const blendGap = blendedActual - blendTgt;
+
+  // ── BLENDED CARDS ──
+  document.getElementById('blend-tgt-label').textContent = Math.round(blendTgt)+'%';
+  const blendS = blendGap>=0?'green':blendGap>=-50?'amber':'red';
+  const nbVsReqS = nbGap>=0?'green':nbGap>=-50?'amber':'red';
+  const brandS = bRoas>=bTgt?'green':bRoas>=bTgt*0.8?'amber':'red';
+
+  document.getElementById('blend-cards').innerHTML=`
+    <div class="bc">
+      <div class="bl">Brand spend</div>
+      <div class="bv c-amber">${f$(bSpend)}</div>
+      <div class="bs">${Math.round(splitBrand*100)}% of budget</div>
+    </div>
+    <div class="bc ${brandS}">
+      <div class="bl">Brand ROAS</div>
+      <div class="bv c-${brandS==='green'?'green':brandS==='amber'?'amber':'red'}">${Math.round(bRoas)}%</div>
+      <div class="bs">target ${Math.round(bTgt)}% — ${bRoas>=bTgt?'✓ on target':f$(Math.abs(bRev-bSpend*bTgt/100))+' short'}</div>
+    </div>
+    <div class="bc">
+      <div class="bl">NB spend (implied)</div>
+      <div class="bv c-blue">${f$(nbSpendImplied)}</div>
+      <div class="bs">${Math.round(splitNB*100)}% of budget</div>
+    </div>
+    <div class="bc ${nbVsReqS}">
+      <div class="bl">NB projected ROAS</div>
+      <div class="bv c-${nbVsReqS==='green'?'green':nbVsReqS==='amber'?'amber':'red'}">${Math.round(nbRoas)}%</div>
+      <div class="bs">required ${Math.round(Math.max(0,reqNbRoas))}% — <span class="pill ${nbGap>=0?'pg':nbGap>=-50?'pa':'pr'}">${nbGap>=0?'✓ above':fp(Math.abs(nbGap),0)+' short'}</span></div>
+    </div>
+    <div class="bc highlight">
+      <div class="bl">Blended ROAS</div>
+      <div class="bv c-${blendS==='green'?'green':blendS==='amber'?'amber':'red'}">${Math.round(blendedActual)}%</div>
+      <div class="bs">target ${Math.round(blendTgt)}% — <span class="pill ${blendGap>=0?'pg':blendGap>=-50?'pa':'pr'}">${blendGap>=0?'✓ on track':fp(Math.abs(blendGap),0)+'pp short'}</span></div>
+    </div>
+  `;
+
+  const reqBar = document.getElementById('req-nb-bar');
+  reqBar.className='req-nb-bar '+(nbGap>=0?'green':nbGap>=-50?'amber':'red');
+  document.getElementById('req-nb-val').textContent = Math.round(Math.max(0,reqNbRoas))+'%';
+  document.getElementById('blend-formula').textContent =
+    `(${Math.round(blendTgt)}% target − ${Math.round(bRoas)}% brand × ${Math.round(splitBrand*100)}%) ÷ ${Math.round(splitNB*100)}% NB = ${Math.round(Math.max(0,reqNbRoas))}% required NB ROAS`;
+
+  // ── NB METRICS ──
+  document.getElementById('nb-metrics').innerHTML=`
+    <div class="mc blue">
+      <div class="ml">NB total spend</div>
+      <div class="mv c-blue">${f$(nbSpend)}</div>
+      <div class="ms">${Math.round(totRegs)} regs × ${f$(totCPR)}</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Proj. NB revenue</div>
+      <div class="mv">${f$(totRev)}</div>
+      <div class="ms">${totE.toFixed(1)} enrols × ${f$(arpu)}</div>
+    </div>
+    <div class="mc ${sc(d1Roas)}">
+      <div class="ml">D1 ROAS signal</div>
+      <div class="mv c-${sc(d1Roas)}">${Math.round(d1Roas)}%</div>
+      <div class="ms">D1 only, before lag</div>
+    </div>
+    <div class="mc ${sc(nbRoas)}">
+      <div class="ml">Proj. NB ROAS</div>
+      <div class="mv c-${sc(nbRoas)}">${Math.round(nbRoas)}%</div>
+      <div class="ms"><span class="pill ${pc(nbRoas)}">${pt(nbRoas)}</span></div>
+    </div>
+  `;
+
+  document.getElementById('nb-formula').innerHTML=
+    `<span style="color:#93c5fd">Spend</span> = ${Math.round(pros)} × ${fp(totReg,1)} × ${f$(totCPR)} = <strong style="color:var(--text)">${f$(nbSpend)}</strong> &nbsp;|&nbsp; `+
+    `<span style="color:var(--green)">Revenue</span> = ${Math.round(pros)} × (${fp(enrol,2)} ÷ ${(lag*100).toFixed(0)}%) × ${f$(arpu)} = <strong style="color:var(--text)">${f$(totRev)}</strong> &nbsp;|&nbsp; `+
+    `<span style="color:#a89ff9">NB ROAS</span> = <strong style="color:var(--text)">${Math.round(nbRoas)}%</strong>`;
+
+  // ── REG LAG ──
+  const implD1CPR = d1Regs>0 ? nbSpend/d1Regs : 0;
+  document.getElementById('reg-lag').innerHTML=`
+    <div class="mc">
+      <div class="ml">D1 registrations</div>
+      <div class="mv">${Math.round(d1Regs)}</div>
+      <div class="ms">${fp(d1Reg,1)} of ${Math.round(pros)}</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Total registrations</div>
+      <div class="mv">${Math.round(totRegs)}</div>
+      <div class="ms">${fp(totReg,1)} — all regs to date</div>
+    </div>
+    <div class="mc ${totReg>d1Reg?'amber':'green'}">
+      <div class="ml">Post-D1 registrations</div>
+      <div class="mv c-${totReg>d1Reg?'amber':'green'}">${Math.round(totRegs-d1Regs)}</div>
+      <div class="ms">${fp(totReg-d1Reg,1)}pp uplift from D1</div>
+    </div>
+    <div class="mc">
+      <div class="ml">D1-only implied CPR</div>
+      <div class="mv">${implD1CPR>0?f$(implD1CPR):'—'}</div>
+      <div class="ms">vs total CPR ${f$(totCPR)}</div>
+    </div>
+  `;
+
+  // ── LEVERS (against required NB ROAS) ──
+  document.getElementById('lev-label').textContent=`to hit required ${Math.round(Math.max(0,reqNbRoas))}% NB ROAS`;
+  const reqCPR_lev  = enrol>0 ? (enrol/100/lag*arpu)/(2*totReg/100) : null;
+  const reqEnrol_lev= 2*(totReg/100)*totCPR/arpu*lag*100;
+  // Adjust for actual required NB ROAS (not always 200%)
+  const roasFactor  = reqNbRoas>0 ? reqNbRoas/200 : 1;
+  const reqCPR_adj  = reqCPR_lev ? reqCPR_lev/roasFactor : null;
+  const reqEnrol_adj= reqEnrol_lev*roasFactor;
+  const cprR        = totCPR*0.8;
+  const reqEnrolR   = reqEnrol_adj*(totCPR/cprR);  // same target but with lower CPR
+  // Actually: reqEnrol_adj = 2*(totReg/100)*reqCPR_adj/arpu*lag*100 when CPR=reqCPR_adj
+  // For lever 3: reqEnrol at cprR = reqNbRoas/100 * cprR * totReg/100 / (arpu/2) * lag * ... 
+  // Simplified: reqEnrol3 = (reqNbRoas/200)*2*(totReg/100)*cprR/arpu*lag*100
+  const reqEnrol3   = (reqNbRoas/200)*2*(totReg/100)*cprR/arpu*lag*100;
+
+  const s1 = reqCPR_adj!==null?(totCPR<=reqCPR_adj?'green':'red'):'amber';
+  const s2 = nbRoas>=reqNbRoas?'green':nbRoas>=reqNbRoas*0.8?'amber':'red';
+
+  document.getElementById('levers').innerHTML=`
+    <div class="lv ${s1}">
+      <div class="lt">Lever 1 — Reduce CPR</div>
+      <div class="lval c-${s1}">${reqCPR_adj!==null?f$(reqCPR_adj):'—'}</div>
+      <div class="ldesc">Total CPR needed at current ${fp(enrol,2)} D1 enrol rate to hit ${Math.round(Math.max(0,reqNbRoas))}% NB ROAS</div>
+      <div class="ldelta" style="color:var(--${s1==='green'?'green':'red'})">${reqCPR_adj!==null?(totCPR<=reqCPR_adj?'✓ Current '+f$(totCPR)+' on target':'Current '+f$(totCPR)+' — drop '+f$(totCPR-reqCPR_adj)):'No enrollments yet'}</div>
+    </div>
+    <div class="lv ${s2}">
+      <div class="lt">Lever 2 — Increase enrol rate</div>
+      <div class="lval c-${s2}">${fp(reqEnrol_adj,2)}</div>
+      <div class="ldesc">D1 enrol rate needed at current ${f$(totCPR)} CPR to hit ${Math.round(Math.max(0,reqNbRoas))}% NB ROAS</div>
+      <div class="ldelta" style="color:var(--${s2==='green'?'green':s2==='amber'?'amber':'red'})">${nbRoas>=reqNbRoas?'✓ Projected NB ROAS '+Math.round(nbRoas)+'% above target':'Gap of '+fp(Math.abs(reqEnrol_adj-enrol),2)}</div>
+    </div>
+    <div class="lv amber">
+      <div class="lt">Lever 3 — Both (CPR −20%)</div>
+      <div class="lval c-purple">${fp(reqEnrol3>0?reqEnrol3:0,2)}</div>
+      <div class="ldesc">If CPR reduced 20% to ${f$(cprR)}, required D1 enrol rate drops to this</div>
+      <div class="ldelta" style="color:var(--${enrol>=(reqEnrol3>0?reqEnrol3:999)?'green':'amber'})">${enrol>=(reqEnrol3>0?reqEnrol3:999)?'✓ Already achievable at this CPR':'More achievable than lever 2 alone'}</div>
+    </div>
+  `;
+
+  buildTable(pros,totReg,totCPR,enrol,arpu,lag,reqNbRoas);
+  buildActions(totCPR,d1Reg,enrol,arpu,lag,nbSpend,nbRoas,implCPE,reqCPE,totE,totRegs,d1Regs,bRoas,bTgt,blendedActual,blendTgt,reqNbRoas,nbGap,blendGap);
+}
+
+function buildTable(pros,totReg,curCPR,enrol,arpu,lag,reqNbRoas){
+  document.getElementById('tbl-pros').textContent=Math.round(pros);
+  document.getElementById('tbl-reg').textContent=totReg.toFixed(1);
+  const b=PROGS[prog].bench;
+  const cprs  =[300,450,600,750,900,1100,1400,1800,2200];
+  const enrols=[0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.5,3.0];
+  const nf=c=>Math.abs(c-curCPR)===Math.min(...cprs.map(x=>Math.abs(x-curCPR)));
+  const ne=e=>Math.abs(e-enrol)===Math.min(...enrols.map(x=>Math.abs(x-enrol)));
+  const reqR=Math.max(reqNbRoas,200);
+
+  document.getElementById('tnote').textContent=
+    `Each cell = projected NB ROAS at ${Math.round(pros)} prospects, ${totReg.toFixed(1)}% total reg rate. `+
+    `Required NB ROAS to hit blended target is ${Math.round(reqR)}% — green cells = on track. Your position highlighted.`;
+
+  let h='<tr><th>CPR ↓ / D1 enrol →</th>';
+  enrols.forEach(e=>h+=`<th>${fp(e,2)}</th>`);
+  h+='</tr>';
+  cprs.forEach(c=>{
+    const isNR=nf(c);
+    h+=isNR?'<tr class="hlr">':'<tr>';
+    const sp=pros*totReg/100*c;
+    h+=`<td>${f$(c)}</td>`;
+    enrols.forEach(e=>{
+      const rev=pros*e/100/lag*arpu;
+      const r  =sp>0?rev/sp*100:0;
+      const isCur=isNR&&ne(e);
+      // Use dynamic required ROAS for coloring
+      const cls=r>=reqR?'pg':r>=reqR*0.7?'pa':'pr';
+      h+=`<td class="${isCur?'cell-cur':''}"><span class="pill ${cls}">${Math.round(r)}%</span></td>`;
+    });
+    h+='</tr>';
+  });
+  document.getElementById('lookup').innerHTML=h;
+}
+
+function buildActions(totCPR,d1Reg,enrol,arpu,lag,nbSpend,nbRoas,implCPE,reqCPE,totE,totRegs,d1Regs,bRoas,bTgt,blendedActual,blendTgt,reqNbRoas,nbGap,blendGap){
+  const b=PROGS[prog].bench;
+  const items=[];
+
+  // Blended status
+  if(blendGap>=0){
+    items.push({s:'green',t:`Blended ${Math.round(blendedActual)}% — on track for ${Math.round(blendTgt)}% target`,d:`Brand at ${Math.round(bRoas)}% and non-brand at ${Math.round(nbRoas)}% combine to beat the ${Math.round(blendTgt)}% target. Maintain current levels.`});
+  } else if(bRoas>=bTgt){
+    items.push({s:'amber',t:`Strong brand (${Math.round(bRoas)}%) partially offsetting NB gap`,d:`Brand is ${Math.round(bRoas-bTgt)}pp above its ${Math.round(bTgt)}% target, which reduces the NB ROAS required to ${Math.round(Math.max(0,reqNbRoas))}%. Non-brand needs to close a ${Math.round(Math.abs(nbGap))}pp gap.`});
+  } else if(nbRoas>=reqNbRoas){
+    items.push({s:'amber',t:`NB on track but brand underperforming`,d:`Non-brand is meeting its ${Math.round(reqNbRoas)}% requirement but brand at ${Math.round(bRoas)}% is below its ${Math.round(bTgt)}% target. Blended is ${Math.round(Math.abs(blendGap))}pp short.`});
+  } else {
+    items.push({s:'red',t:`Both brand and NB below target — blended ${Math.round(Math.abs(blendGap))}pp short`,d:`Brand at ${Math.round(bRoas)}% (target ${Math.round(bTgt)}%) and NB at ${Math.round(nbRoas)}% (required ${Math.round(Math.max(0,reqNbRoas))}%) are both underperforming. Prioritise CPR reduction on NB — it's the most actionable lever.`});
+  }
+
+  // CPR status
+  if(totCPR>b.cpr_warn){
+    items.push({s:'red',t:`CPR ${f$(totCPR)} above caution threshold`,d:`${f$(b.cpr_warn)} is the caution level for ${prog}. Historical average is ${f$(b.cpr_avg)}, best week was ${f$(b.cpr_best)}. Negative keywords uploaded today should reduce this — expect improvement over 2–3 weeks.`});
+  } else if(totCPR>b.cpr_avg){
+    items.push({s:'amber',t:`CPR above ${prog} average`,d:`${f$(totCPR)} vs ${f$(b.cpr_avg)} historical average. Reducing to average would lower the required D1 enrollment rate by approx. ${fp(2*(parseFloat(document.getElementById('treg-s').value)/100)*(totCPR-b.cpr_avg)/arpu*lag*100,2)}.`});
+  } else {
+    items.push({s:'green',t:`CPR within ${prog} healthy range`,d:`${f$(totCPR)} is below the ${f$(b.cpr_avg)} historical average. Good efficiency — focus on enrollment conversion rate.`});
+  }
+
+  // Enrollment / CPE status
+  if(totE===0){
+    items.push({s:'amber',t:'No D1 enrollments yet',d:`${Math.round(totRegs)} total registrations in pipeline. CPR and reg rate are leading indicators at this stage.`});
+  } else if(implCPE<=reqCPE){
+    items.push({s:'green',t:'Projected CPE within ceiling',d:`${f$(implCPE)} projected total CPE vs ${f$(reqCPE)} ceiling (ARPU÷2). Enrollment quality is supporting the ROAS target.`});
+  } else {
+    items.push({s:'red',t:'Projected CPE above ceiling',d:`${f$(implCPE)} projected vs ${f$(reqCPE)} ceiling. At this CPR, enrollment rate needs to reach ${fp(2*(parseFloat(document.getElementById('treg-s').value)/100)*totCPR/arpu*lag*100,2)} to bring CPE within range.`});
+  }
+
+  document.getElementById('actions').innerHTML=items.map(i=>`
+    <div class="ai ${i.s}">
+      <div class="ai-dot ${i.s}"></div>
+      <div><div class="ai-t ${i.s}">${i.t}</div><div class="ai-d">${i.d}</div></div>
+    </div>
+  `).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+setProg('AIP');
+setWeek(2);
+</script>
+</body>
+</html>
