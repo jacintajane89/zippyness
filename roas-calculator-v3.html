@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>200% ROAS Target Calculator — Non-Branded Search</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0f0f11;--surface:#18181c;--surface2:#1f1f25;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+    --text:#f0eff4;--muted:#8b8a96;
+    --green:#22c98a;--green-bg:rgba(34,201,138,0.1);--green-border:rgba(34,201,138,0.25);
+    --amber:#f0a827;--amber-bg:rgba(240,168,39,0.1);--amber-border:rgba(240,168,39,0.25);
+    --red:#f05252;--red-bg:rgba(240,82,82,0.1);--red-border:rgba(240,82,82,0.25);
+    --accent:#7c6ff7;--accent-light:rgba(124,111,247,0.15);--accent-border:rgba(124,111,247,0.3);
+    --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.1);--blue-border:rgba(59,130,246,0.25);
+    --radius:10px;--radius-lg:14px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+  .header{border-bottom:1px solid var(--border);padding:24px 40px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .header h1{font-size:19px;font-weight:500;letter-spacing:-0.3px;}
+  .header p{font-size:12px;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace;}
+  .badge{background:var(--accent-light);border:1px solid var(--accent-border);color:#a89ff9;font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;white-space:nowrap;}
+  .layout{display:grid;grid-template-columns:380px 1fr;min-height:calc(100vh - 73px);}
+  .sidebar{border-right:1px solid var(--border);padding:24px 22px;display:flex;flex-direction:column;gap:22px;overflow-y:auto;}
+  .main{padding:24px 28px;display:flex;flex-direction:column;gap:22px;overflow:hidden;}
+  .slabel{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+  .week-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+  .week-btn{padding:7px 4px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;text-align:center;transition:all 0.15s;}
+  .week-btn:hover{border-color:var(--accent);color:var(--text);}
+  .week-btn.active{background:var(--accent-light);border-color:rgba(124,111,247,0.5);color:#a89ff9;}
+  .week-note{font-size:12px;color:var(--muted);line-height:1.5;padding:9px 12px;background:var(--surface);border-radius:var(--radius);border-left:2px solid var(--accent);}
+
+  /* Input section grouping */
+  .input-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;}
+  .input-section-title{font-size:11px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .side-tag{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:0.8px;text-transform:uppercase;padding:2px 8px;border-radius:20px;}
+  .side-tag.spend{background:var(--blue-bg);color:#93c5fd;border:1px solid var(--blue-border);}
+  .side-tag.revenue{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+  .ig{margin-bottom:14px;}
+  .ig:last-child{margin-bottom:0;}
+  .il{font-size:12px;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+  .il .v{font-family:'DM Mono',monospace;color:var(--text);font-size:13px;}
+  .il .hint{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);font-style:italic;}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--surface2);border-radius:2px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);transition:transform 0.1s;}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
+  .input-section.spend-side input[type=range]::-webkit-slider-thumb{background:var(--blue);}
+  .input-section.revenue-side input[type=range]::-webkit-slider-thumb{background:var(--green);}
+
+  /* Clarification box */
+  .clarify{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 13px;font-size:12px;color:var(--muted);line-height:1.7;}
+  .clarify strong{color:var(--text);font-weight:500;}
+  .clarify .row{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start;}
+  .clarify .row:last-child{margin-bottom:0;}
+  .dot-blue{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:5px;}
+  .dot-green{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px;}
+
+  /* Metrics */
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+  .mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px 15px;}
+  .mc.green{border-color:var(--green-border);background:var(--green-bg);}
+  .mc.amber{border-color:var(--amber-border);background:var(--amber-bg);}
+  .mc.red{border-color:var(--red-border);background:var(--red-bg);}
+  .mc.blue{border-color:var(--blue-border);background:var(--blue-bg);}
+  .mc .ml{font-size:11px;color:var(--muted);margin-bottom:5px;}
+  .mc .mv{font-size:21px;font-weight:500;letter-spacing:-0.5px;line-height:1;}
+  .mc .ms{font-size:11px;color:var(--muted);margin-top:5px;}
+  .c-green{color:var(--green);}.c-amber{color:var(--amber);}.c-red{color:var(--red);}.c-blue{color:#93c5fd;}.c-accent{color:#a89ff9;}
+
+  /* Formula bar */
+  .formula-bar{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 13px;line-height:1.8;}
+  .formula-bar .spend-col{color:#93c5fd;}.formula-bar .rev-col{color:var(--green);}
+
+  /* Levers */
+  .levers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  .lever{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;}
+  .lever .lv-tag{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .lever .lv-val{font-size:20px;font-weight:500;letter-spacing:-0.4px;margin-bottom:4px;}
+  .lever .lv-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+  .lever .lv-delta{font-size:11px;font-family:'DM Mono',monospace;margin-top:6px;}
+  .lever.green{border-color:var(--green-border);}.lever.amber{border-color:var(--amber-border);}.lever.red{border-color:var(--red-border);}
+  .divider{border:none;border-top:1px solid var(--border);}
+
+  /* Table */
+  .table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{background:var(--surface2);color:var(--muted);font-weight:500;padding:7px 8px;text-align:center;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap;}
+  th:first-child{text-align:left;min-width:90px;}
+  td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);}
+  td:first-child{text-align:left;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;}
+  tr:last-child td{border-bottom:none;}
+  tr.hl-row{background:rgba(124,111,247,0.04);}
+  .pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+  .pill-g{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+  .pill-a{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);}
+  .pill-r{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+  .cell-cur{background:rgba(124,111,247,0.18)!important;font-weight:600;outline:1px solid rgba(124,111,247,0.4);}
+
+  /* Actions */
+  .actions{display:flex;flex-direction:column;gap:8px;}
+  .ai{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border-radius:var(--radius);border:1px solid transparent;}
+  .ai.green{background:var(--green-bg);border-color:var(--green-border);}
+  .ai.amber{background:var(--amber-bg);border-color:var(--amber-border);}
+  .ai.red{background:var(--red-bg);border-color:var(--red-border);}
+  .ai-dot{width:6px;height:6px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+  .ai-dot.green{background:var(--green);}.ai-dot.amber{background:var(--amber);}.ai-dot.red{background:var(--red);}
+  .ai-title{font-size:13px;font-weight:500;margin-bottom:2px;}
+  .ai-title.green{color:var(--green);}.ai-title.amber{color:var(--amber);}.ai-title.red{color:var(--red);}
+  .ai-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+  .tab-note{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
+
+  @media(max-width:960px){.layout{grid-template-columns:1fr;}.sidebar{border-right:none;border-bottom:1px solid var(--border);}.metrics-grid{grid-template-columns:1fr 1fr;}.levers{grid-template-columns:1fr;}}
+  @media(max-width:600px){.header{padding:16px 20px;}.main{padding:16px 18px;}.metrics-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>200% ROAS Target Calculator</h1>
+    <p>Non-Branded Paid Search — Dynamic Waterfall</p>
+  </div>
+  <div class="badge">Ziplines Education</div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+
+    <div>
+      <div class="slabel">Week of month</div>
+      <div class="week-grid">
+        <button class="week-btn" data-w="1" onclick="setWeek(1)">Wk 1</button>
+        <button class="week-btn active" data-w="2" onclick="setWeek(2)">Wk 2</button>
+        <button class="week-btn" data-w="3" onclick="setWeek(3)">Wk 3</button>
+        <button class="week-btn" data-w="4" onclick="setWeek(4)">Wk 4</button>
+      </div>
+      <div class="week-note" id="week-note"></div>
+    </div>
+
+    <!-- SPEND SIDE -->
+    <div class="input-section spend-side">
+      <div class="input-section-title">
+        <span class="side-tag spend">Spend side</span>
+        <span style="font-size:12px;color:var(--muted);">Use total figures — all registrations to date</span>
+      </div>
+
+      <div class="ig">
+        <div class="il">Total prospects this week <span class="v" id="pros-o">100</span></div>
+        <input type="range" min="20" max="300" step="1" value="100" id="pros-s" oninput="update()">
+      </div>
+      <div class="ig">
+        <div class="il">
+          <span>Total registration rate <span class="hint">(all regs ÷ prospects)</span></span>
+          <span class="v" id="tot-reg-o">16.0%</span>
+        </div>
+        <input type="range" min="2" max="30" step="0.5" value="16" id="tot-reg-s" oninput="update()">
+      </div>
+      <div class="ig">
+        <div class="il">
+          <span>Total CPR <span class="hint">(total spend ÷ total regs)</span></span>
+          <span class="v" id="tot-cpr-o">$363</span>
+        </div>
+        <input type="range" min="150" max="2500" step="25" value="363" id="tot-cpr-s" oninput="update()">
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <div class="il">
+          <span>D1 registration rate <span class="hint">(Day 1 only, for reference)</span></span>
+          <span class="v" id="d1-reg-o">14.0%</span>
+        </div>
+        <input type="range" min="2" max="22" step="0.5" value="14" id="d1-reg-s" oninput="update()">
+      </div>
+    </div>
+
+    <!-- REVENUE SIDE -->
+    <div class="input-section revenue-side">
+      <div class="input-section-title">
+        <span class="side-tag revenue">Revenue side</span>
+        <span style="font-size:12px;color:var(--muted);">D1 rate + lag = projected total</span>
+      </div>
+
+      <div class="ig">
+        <div class="il">
+          <span>D1 enrollment rate <span class="hint">(Day 1 enrollments ÷ prospects)</span></span>
+          <span class="v" id="enrol-o">1.00%</span>
+        </div>
+        <input type="range" min="0" max="5" step="0.05" value="1" id="enrol-s" oninput="update()">
+      </div>
+      <div class="ig" style="margin-bottom:0">
+        <div class="il">ARPU <span class="v" id="arpu-o">$2,350</span></div>
+        <input type="range" min="1800" max="2800" step="50" value="2350" id="arpu-s" oninput="update()">
+      </div>
+    </div>
+
+    <!-- Clarification -->
+    <div class="clarify">
+      <div class="slabel" style="margin-bottom:8px">Input logic</div>
+      <div class="row"><div class="dot-blue"></div><div><strong>Spend side uses totals</strong> — total CPR ($363) and total reg rate already capture registrations that converted after Day 1. This gives accurate actual spend.</div></div>
+      <div class="row" style="margin-top:8px"><div class="dot-green"></div><div><strong>Revenue side uses D1 + lag</strong> — enrollments have a longer tail, so D1 enrollment rate × lag factor projects to total enrollments by month end.</div></div>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <div>
+      <div class="slabel">This week — actual spend &amp; projected ROAS</div>
+      <div class="metrics-grid" id="metrics"></div>
+      <div class="formula-bar" id="formula" style="margin-top:10px"></div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="slabel">Registration lag — D1 vs total</div>
+      <div class="metrics-grid" id="reg-lag-cards"></div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="slabel">Three levers to 200% ROAS</div>
+      <div class="levers" id="levers"></div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="slabel">ROAS outcome table — total CPR vs D1 enrollment rate at <span id="tbl-pros">100</span> prospects, <span id="tbl-reg">16.0</span>% total reg rate</div>
+      <div class="tab-note" id="tab-note"></div>
+      <div class="table-wrap"><table id="lookup"></table></div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="slabel">Action guide</div>
+      <div class="actions" id="actions"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const WEEKS={
+  1:{lag:0.40,enrolRange:'0.7–1.0%',note:'Week 1 — furthest from cohort. ~40% of final enrollments visible on Day 1. Lean on total CPR and total reg rate as leading indicators.'},
+  2:{lag:0.55,enrolRange:'0.9–1.3%',note:'Week 2 — ~55% of final enrollments captured on Day 1. Gap between D1 CPR and total CPR will narrow as more registrations arrive.'},
+  3:{lag:0.75,enrolRange:'1.2–1.7%',note:'Week 3 — ~75% of final enrollments visible. D1 and total reg rates should be converging. Strong signal available.'},
+  4:{lag:1.00,enrolRange:'1.5–2.5%',note:'Week 4 — cohort imminent. D1 ≈ total for both registrations and enrollments. Full signal — what you see is what you get.'}
+};
+let week=2;
+
+function f$(n){return '$'+Math.round(n).toLocaleString();}
+function fp(n,d=2){return n.toFixed(d)+'%';}
+function sc(r){return r>=200?'green':r>=120?'amber':'red';}
+function pc(r){return r>=200?'pill-g':r>=120?'pill-a':'pill-r';}
+function pt(r){return r>=200?'✓ on track':r>=120?'below target':'off target';}
+
+function setWeek(w){
+  week=w;
+  document.querySelectorAll('.week-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.w)===w));
+  document.getElementById('week-note').textContent=WEEKS[w].note;
+  update();
+}
+
+function update(){
+  const pros    = parseFloat(document.getElementById('pros-s').value);
+  const totReg  = parseFloat(document.getElementById('tot-reg-s').value);
+  const totCPR  = parseFloat(document.getElementById('tot-cpr-s').value);
+  const d1Reg   = parseFloat(document.getElementById('d1-reg-s').value);
+  const enrol   = parseFloat(document.getElementById('enrol-s').value);
+  const arpu    = parseFloat(document.getElementById('arpu-s').value);
+  const lag     = WEEKS[week].lag;
+
+  document.getElementById('pros-o').textContent   = Math.round(pros);
+  document.getElementById('tot-reg-o').textContent= fp(totReg,1);
+  document.getElementById('tot-cpr-o').textContent= f$(totCPR);
+  document.getElementById('d1-reg-o').textContent = fp(d1Reg,1);
+  document.getElementById('enrol-o').textContent  = fp(enrol,2);
+  document.getElementById('arpu-o').textContent   = f$(arpu);
+
+  // SPEND: uses total registrations × total CPR
+  const totRegs  = pros * totReg/100;
+  const spend    = totRegs * totCPR;
+
+  // D1 registrations (for reference)
+  const d1Regs   = pros * d1Reg/100;
+  const regLagPct= d1Reg/totReg*100;
+
+  // REVENUE: D1 enrollments projected via lag
+  const d1e      = pros * enrol/100;
+  const totE     = d1e / lag;
+  const totRev   = totE * arpu;
+
+  const roas     = spend>0 ? totRev/spend*100 : 0;
+  const d1Roas   = spend>0 ? (d1e*arpu)/spend*100 : 0;
+  const implCPE  = totE>0  ? spend/totE : 0;
+  const reqCPE   = arpu/2;
+
+  const s_roas   = sc(roas);
+  const s_cpe    = totE>0 ? (implCPE<=reqCPE?'green':'red') : 'amber';
+
+  document.getElementById('metrics').innerHTML=`
+    <div class="mc blue">
+      <div class="ml">Total spend this week</div>
+      <div class="mv c-blue">${f$(spend)}</div>
+      <div class="ms">${Math.round(totRegs)} total regs × ${f$(totCPR)}</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Projected total revenue</div>
+      <div class="mv">${f$(totRev)}</div>
+      <div class="ms">${totE.toFixed(1)} proj. enrollments × ${f$(arpu)}</div>
+    </div>
+    <div class="mc ${sc(d1Roas)}">
+      <div class="ml">D1 ROAS signal</div>
+      <div class="mv c-${sc(d1Roas)}">${Math.round(d1Roas)}%</div>
+      <div class="ms">D1 enrollments only, before lag</div>
+    </div>
+    <div class="mc ${s_roas}">
+      <div class="ml">Projected total ROAS</div>
+      <div class="mv c-${s_roas}">${Math.round(roas)}%</div>
+      <div class="ms"><span class="pill ${pc(roas)}">${pt(roas)}</span></div>
+    </div>
+  `;
+
+  document.getElementById('formula').innerHTML=
+    `<span class="spend-col">Spend</span> = ${Math.round(pros)} prospects × ${fp(totReg,1)} total reg rate × ${f$(totCPR)} CPR = <strong style="color:var(--text)">${f$(spend)}</strong><br>`+
+    `<span class="rev-col">Revenue</span> = ${Math.round(pros)} × (${fp(enrol,2)} D1 enrol ÷ ${(lag*100).toFixed(0)}% lag) × ${f$(arpu)} ARPU = <strong style="color:var(--text)">${f$(totRev)}</strong><br>`+
+    `<span style="color:#a89ff9">ROAS</span> = ${f$(totRev)} ÷ ${f$(spend)} × 100 = <strong style="color:var(--text)">${Math.round(roas)}%</strong>`;
+
+  // Registration lag cards
+  const impliedD1CPR = d1Regs>0 ? spend/d1Regs : 0; // what CPR looks like if only counting D1 regs
+  document.getElementById('reg-lag-cards').innerHTML=`
+    <div class="mc">
+      <div class="ml">D1 registrations</div>
+      <div class="mv">${Math.round(d1Regs)}</div>
+      <div class="ms">${fp(d1Reg,1)} of ${Math.round(pros)} prospects</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Total registrations (to date)</div>
+      <div class="mv">${Math.round(totRegs)}</div>
+      <div class="ms">${fp(totReg,1)} of ${Math.round(pros)} prospects</div>
+    </div>
+    <div class="mc ${totReg>d1Reg?'amber':'green'}">
+      <div class="ml">Post-D1 registrations</div>
+      <div class="mv c-${totReg>d1Reg?'amber':'green'}">${Math.round(totRegs-d1Regs)}</div>
+      <div class="ms">${fp(totReg-d1Reg,1)}pp uplift from D1 rate</div>
+    </div>
+    <div class="mc">
+      <div class="ml">D1 CPR vs total CPR</div>
+      <div class="mv">${f$(totCPR)}</div>
+      <div class="ms">D1-only implied: ${impliedD1CPR>0?f$(impliedD1CPR):'—'}</div>
+    </div>
+  `;
+
+  buildLevers(pros,totReg,totCPR,enrol,arpu,lag,spend,roas,implCPE,reqCPE,totE);
+  buildTable(pros,totReg,totCPR,enrol,arpu,lag);
+  buildActions(pros,totReg,totCPR,d1Reg,enrol,arpu,lag,spend,roas,implCPE,reqCPE,totE,totRegs,d1Regs);
+}
+
+function buildLevers(pros,totReg,totCPR,enrol,arpu,lag,spend,roas,implCPE,reqCPE,totE){
+  // Lever 1: required total CPR at current enrol rate
+  // 200%: totRev=2*spend => pros*(enrol/100/lag)*arpu = 2*(pros*totReg/100*cpr)
+  // => cpr = (enrol/lag*arpu)/(2*totReg)
+  const reqCPR = enrol>0 ? (enrol/100/lag*arpu)/(2*totReg/100) : null;
+
+  // Lever 2: required D1 enrol rate at current CPR
+  // => enrol = 2*totReg*totCPR*lag/arpu
+  const reqEnrol = 2*(totReg/100)*totCPR/arpu*lag*100;
+
+  // Lever 3: CPR reduced 20%
+  const cprR = totCPR*0.8;
+  const reqEnrolR = 2*(totReg/100)*cprR/arpu*lag*100;
+
+  const s1 = reqCPR!==null?(totCPR<=reqCPR?'green':'red'):'amber';
+  const s2 = enrol>=reqEnrol?'green':enrol>=reqEnrol*0.7?'amber':'red';
+
+  document.getElementById('levers').innerHTML=`
+    <div class="lever ${s1}">
+      <div class="lv-tag">Lever 1 — Reduce total CPR</div>
+      <div class="lv-val c-${s1}">${reqCPR!==null?f$(reqCPR):'—'}</div>
+      <div class="lv-desc">Total CPR needed at your current ${fp(enrol,2)} D1 enrollment rate to hit 200% ROAS</div>
+      <div class="lv-delta" style="color:var(--${s1==='green'?'green':'red'})">${reqCPR!==null?(totCPR<=reqCPR?'✓ Current '+f$(totCPR)+' is below target':'Current '+f$(totCPR)+' — needs to drop '+f$(totCPR-reqCPR)):'No enrollments yet'}</div>
+    </div>
+    <div class="lever ${s2}">
+      <div class="lv-tag">Lever 2 — Increase enrol rate</div>
+      <div class="lv-val c-${s2}">${fp(reqEnrol,2)}</div>
+      <div class="lv-desc">D1 enrollment rate needed at current ${f$(totCPR)} total CPR to hit 200% ROAS</div>
+      <div class="lv-delta" style="color:var(--${s2==='green'?'green':s2==='amber'?'amber':'red'})">${enrol>=reqEnrol?'✓ Current '+fp(enrol,2)+' is above target':'Current '+fp(enrol,2)+' — gap of '+fp(reqEnrol-enrol,2)}</div>
+    </div>
+    <div class="lever amber">
+      <div class="lv-tag">Lever 3 — Both (CPR −20%)</div>
+      <div class="lv-val c-accent">${fp(reqEnrolR,2)}</div>
+      <div class="lv-desc">If total CPR reduced 20% to ${f$(cprR)}, D1 enrollment rate needed drops to this</div>
+      <div class="lv-delta" style="color:var(--${enrol>=reqEnrolR?'green':'amber'})">${enrol>=reqEnrolR?'✓ Already achievable at this CPR':'Gap of '+fp(reqEnrolR-enrol,2)+' — much more achievable'}</div>
+    </div>
+  `;
+}
+
+function buildTable(pros,totReg,curCPR,enrol,arpu,lag){
+  document.getElementById('tbl-pros').textContent=Math.round(pros);
+  document.getElementById('tbl-reg').textContent=totReg.toFixed(1);
+
+  const cprs   =[250,350,450,550,650,800,1000,1300,1700];
+  const enrols =[0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.5,3.0];
+
+  const nearCPR_fn  = c=>Math.abs(c-curCPR)===Math.min(...cprs.map(x=>Math.abs(x-curCPR)));
+  const nearEnrol_fn= e=>Math.abs(e-enrol)===Math.min(...enrols.map(x=>Math.abs(x-enrol)));
+
+  document.getElementById('tab-note').textContent=
+    `Each cell = projected ROAS using ${Math.round(pros)} prospects, ${totReg.toFixed(1)}% total reg rate. `+
+    `Spend changes as total CPR changes — so each row has a genuinely different spend figure. Your current position is highlighted.`;
+
+  let h='<tr><th>Total CPR ↓ / D1 enrol →</th>';
+  enrols.forEach(e=>h+=`<th>${fp(e,2)}</th>`);
+  h+='</tr>';
+  cprs.forEach(c=>{
+    const isNearCPR=nearCPR_fn(c);
+    h+=isNearCPR?'<tr class="hl-row">':'<tr>';
+    h+=`<td>${f$(c)}</td>`;
+    enrols.forEach(e=>{
+      const sp =pros*totReg/100*c;
+      const rev=pros*e/100/lag*arpu;
+      const r  =sp>0?rev/sp*100:0;
+      const isNearEnrol=nearEnrol_fn(e);
+      const isCur=isNearCPR&&isNearEnrol;
+      const cls=r>=200?'pill-g':r>=120?'pill-a':'pill-r';
+      h+=`<td class="${isCur?'cell-cur':''}"><span class="pill ${cls}">${Math.round(r)}%</span></td>`;
+    });
+    h+='</tr>';
+  });
+  document.getElementById('lookup').innerHTML=h;
+}
+
+function buildActions(pros,totReg,totCPR,d1Reg,enrol,arpu,lag,spend,roas,implCPE,reqCPE,totE,totRegs,d1Regs){
+  const items=[];
+  const reqCPR = enrol>0?(enrol/100/lag*arpu)/(2*totReg/100):null;
+  const reqEnrol=2*(totReg/100)*totCPR/arpu*lag*100;
+  const regLag  = totReg>0?d1Reg/totReg*100:100;
+
+  if(roas>=200){
+    items.push({s:'green',t:'On track for 200% ROAS',d:`Projected total ROAS ${Math.round(roas)}% at ${f$(spend)} spend. Maintain current levels and monitor as the cohort progresses.`});
+  } else if(roas>=120){
+    items.push({s:'amber',t:'Approaching target',d:`${Math.round(200-roas)}pp short. Enrollment rate needs to reach ${fp(reqEnrol,2)} or total CPR needs to fall to ${reqCPR?f$(reqCPR):'—'} to close the gap.`});
+  } else {
+    items.push({s:'red',t:'Materially below 200% target',d:`${Math.round(200-roas)}pp short. Both CPR reduction and enrollment rate improvement likely needed. Check keyword quality and cohort timing.`});
+  }
+
+  if(totReg>d1Reg){
+    items.push({s:'amber',t:`Post-D1 registrations adding ${Math.round(totRegs-d1Regs)} regs`,d:`Your total reg rate (${fp(totReg,1)}) is ${fp(totReg-d1Reg,1)}pp higher than D1 rate (${fp(d1Reg,1)}). This reduces your effective CPR from ~${f$(spend/d1Regs)} (D1-only) to ${f$(totCPR)} (total). This lag will continue closing over the week.`});
+  } else {
+    items.push({s:'green',t:'D1 and total registration rates aligned',d:`No significant post-D1 registration lag this week. Total reg rate and D1 reg rate are consistent.`});
+  }
+
+  if(totE===0){
+    items.push({s:'amber',t:'No D1 enrollments yet',d:`${Math.round(totRegs)} total registrations in the pipeline. Too early for enrollment signal — revisit in 24–48hrs. Watch CPR as the leading indicator.`});
+  } else if(implCPE<=reqCPE){
+    items.push({s:'green',t:'Projected total CPE within ceiling',d:`${f$(implCPE)} projected total CPE vs ${f$(reqCPE)} ceiling (ARPU÷2). Enrollment quality is supporting 200% ROAS.`});
+  } else {
+    items.push({s:'red',t:'Projected CPE above ceiling',d:`${f$(implCPE)} projected vs ${f$(reqCPE)} ceiling. Need D1 enrollment rate of ${fp(reqEnrol,2)} or total CPR of ${reqCPR?f$(reqCPR):'—'} to bring CPE within range.`});
+  }
+
+  document.getElementById('actions').innerHTML=items.map(i=>`
+    <div class="ai ${i.s}">
+      <div class="ai-dot ${i.s}"></div>
+      <div><div class="ai-title ${i.s}">${i.t}</div><div class="ai-desc">${i.d}</div></div>
+    </div>
+  `).join('');
+}
+
+setWeek(2);
+</script>
+</body>
+</html>
