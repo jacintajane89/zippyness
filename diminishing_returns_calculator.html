@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Diminishing Returns — CAC Optimiser</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#1a1a1a;background:#f5f4f0;padding:16px;}
+h1{font-size:18px;font-weight:500;margin-bottom:2px;}
+h2{font-size:14px;font-weight:500;margin-bottom:10px;}
+.sub{font-size:12px;color:#666;margin-bottom:18px;}
+.card{background:#fff;border:0.5px solid #e0ded8;border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+.pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;}
+.section-label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+/* tabs */
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.tab{padding:5px 14px;border:0.5px solid #ccc;border-radius:20px;cursor:pointer;font-size:12px;background:#fff;color:#666;}
+.tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.tabpanel{display:none;}.tabpanel.active{display:block;}
+/* inputs */
+input[type=number]{border:0.5px solid #ccc;border-radius:6px;padding:4px 6px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a;width:90px;text-align:right;}
+input[type=range]{width:100%;accent-color:#1a1a1a;cursor:pointer;}
+input[type=number]:focus{outline:none;border-color:#1a1a1a;}
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{font-size:10px;font-weight:500;color:#666;text-align:left;padding:5px 8px;border-bottom:0.5px solid #eee;}
+td{padding:5px 8px;border-bottom:0.5px solid #eee;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.tfoot-row td{background:#f5f4f0;font-weight:500;border-bottom:none;}
+/* metrics */
+.metric-card{background:#f5f4f0;border-radius:8px;padding:10px 12px;}
+.metric-lbl{font-size:10px;color:#888;margin-bottom:3px;}
+.metric-val{font-size:20px;font-weight:500;}
+.metric-sub{font-size:10px;color:#666;margin-top:2px;}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px;}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+/* chart containers */
+.charts-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;}
+.chart-wrap{background:#fff;border:0.5px solid #e0ded8;border-radius:10px;padding:12px;}
+.chart-title{font-size:11px;font-weight:500;margin-bottom:8px;}
+canvas{max-height:200px;}
+/* level buttons */
+.lvl-btn{padding:3px 8px;border:0.5px solid #ccc;border-radius:4px;cursor:pointer;font-size:10px;background:#fff;font-family:inherit;}
+.lvl-btn.sel{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+/* marginal table */
+.rank-1{background:#EAF3DE;color:#27500A;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500;}
+.rank-2{background:#E6F1FB;color:#042C53;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500;}
+.rank-bad{background:#FCEBEB;color:#791F1F;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500;}
+.good{color:#27500A;font-weight:500;}
+.bad{color:#A32D2D;}
+.note{font-size:10px;color:#888;line-height:1.5;}
+.flex-sb{display:flex;justify-content:space-between;align-items:center;}
+hr{border:none;border-top:0.5px solid #eee;margin:12px 0;}
+.cpe-live{font-size:11px;color:#666;margin-top:2px;}
+.enr-live{font-size:11px;color:#27500A;margin-top:1px;font-weight:500;}
+</style>
+</head>
+<body>
+
+<h1>Diminishing Returns — CAC Optimiser</h1>
+<p class="sub">Define spend/CPE curves for each program and channel, then let your manager allocate budget and instantly see the impact on CAC. Based on historical conversion rates from 55-week cohort data.</p>
+
+<!-- ═══ SECTION 1: CURVE SETUP ═══ -->
+<div class="card">
+  <div class="section-label">Step 1 — Define diminishing returns curves</div>
+  <p class="note" style="margin-bottom:12px;">For each program, enter your expected CPE at three spend levels. The calculator fits a curve through these points and uses it to price any spend amount. Defaults are pre-populated from 55-week historical averages with ±40% elasticity.</p>
+  <div class="tabs" id="curve_tabs"></div>
+  <div id="curve_panels"></div>
+</div>
+
+<!-- ═══ SECTION 2: MANAGER ALLOCATION ═══ -->
+<div class="card">
+  <div class="section-label">Step 2 — Manager allocation view</div>
+  <p class="note" style="margin-bottom:12px;">Pick a spend level for each program × channel using the presets or type a custom amount. CPE and enrollments update automatically from your curves above. The goal is to find the combination that minimises overall CAC.</p>
+  <div id="alloc_table_wrap"></div>
+</div>
+
+<!-- ═══ SECTION 3: RESULTS ═══ -->
+<div class="card">
+  <div class="section-label">Step 3 — Results</div>
+  <div class="grid3" id="results_metrics" style="margin-bottom:14px;"></div>
+  <div class="flex-sb" style="margin-bottom:8px;"><h2 style="margin:0;">Marginal efficiency ranking</h2><span class="note">Lowest marginal CPE = highest return on next dollar spent</span></div>
+  <table id="marginal_table">
+    <thead><tr><th>Rank</th><th>Program</th><th>Channel</th><th>Current spend</th><th>Current CPE</th><th>Marginal CPE (+$10k)</th><th>D30 enrollments</th><th>CAC</th></tr></thead>
+    <tbody id="marginal_body"></tbody>
+  </table>
+  <p class="note" style="margin-top:8px;">Marginal CPE = how much extra spend on this channel/program would cost per additional enrollment. Lower = more efficient use of next dollar.</p>
+</div>
+
+<!-- ═══ SECTION 4: CHARTS ═══ -->
+<div class="section-label" style="margin:4px 0 8px;">Diminishing returns curves — current allocation shown as ●</div>
+<div class="charts-grid">
+  <div class="chart-wrap"><div class="chart-title">Facebook — CPE vs monthly spend</div><canvas id="chart_fb"></canvas></div>
+  <div class="chart-wrap"><div class="chart-title">Google Branded — CPE vs monthly spend</div><canvas id="chart_gb"></canvas></div>
+  <div class="chart-wrap"><div class="chart-title">Google Non-Branded — CPE vs monthly spend</div><canvas id="chart_nb"></canvas></div>
+</div>
+<div class="card">
+  <div class="chart-title">Total enrollments vs total monthly spend — efficiency frontier</div>
+  <canvas id="chart_frontier" style="max-height:160px;"></canvas>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const PROGRAMS = ['AIP','BAS','DMS','PJM'];
+const CHANNELS = ['Facebook','Google Branded','Google Non-Branded'];
+
+// Historical CPE (cost per D30 enrollment) and reference spend per program/channel
+// CPE derived from: CPL / (p2r × r2d30e)
+const REF = {
+  AIP:{ Facebook:{cpe:1947,spend:700000}, 'Google Branded':{cpe:842,spend:28000},  'Google Non-Branded':{cpe:1744,spend:93000} },
+  BAS:{ Facebook:{cpe:2961,spend:260000}, 'Google Branded':{cpe:2040,spend:22000},  'Google Non-Branded':{cpe:2826,spend:69000} },
+  DMS:{ Facebook:{cpe:2684,spend:680000}, 'Google Branded':{cpe:1069,spend:43000},  'Google Non-Branded':{cpe:2489,spend:130000} },
+  PJM:{ Facebook:{cpe:3199,spend:500000}, 'Google Branded':{cpe:1424,spend:50000},  'Google Non-Branded':{cpe:2242,spend:200000} },
+};
+
+// Conversion rates for enrollments calculation
+const CONV = {
+  AIP:{ Facebook:{p2r:0.103,r2d30e:0.1048}, 'Google Branded':{p2r:0.237,r2d30e:0.3728}, 'Google Non-Branded':{p2r:0.171,r2d30e:0.242} },
+  BAS:{ Facebook:{p2r:0.122,r2d30e:0.0903}, 'Google Branded':{p2r:0.238,r2d30e:0.3613}, 'Google Non-Branded':{p2r:0.207,r2d30e:0.1681} },
+  DMS:{ Facebook:{p2r:0.102,r2d30e:0.0881}, 'Google Branded':{p2r:0.247,r2d30e:0.4171}, 'Google Non-Branded':{p2r:0.197,r2d30e:0.1841} },
+  PJM:{ Facebook:{p2r:0.147,r2d30e:0.0552}, 'Google Branded':{p2r:0.289,r2d30e:0.2665}, 'Google Non-Branded':{p2r:0.212,r2d30e:0.1818} },
+};
+
+const PROG_COLORS  = {AIP:'#7F77DD',BAS:'#1D9E75',DMS:'#378ADD',PJM:'#BA7517'};
+const PROG_PILLS   = {AIP:{bg:'#EEEDFE',tx:'#3C3489'},BAS:{bg:'#E1F5EE',tx:'#085041'},DMS:{bg:'#E6F1FB',tx:'#042C53'},PJM:{bg:'#FAEEDA',tx:'#412402'}};
+const CH_PILLS     = {Facebook:{bg:'#E6F1FB',tx:'#042C53'},'Google Branded':{bg:'#E1F5EE',tx:'#085041'},'Google Non-Branded':{bg:'#FAEEDA',tx:'#412402'}};
+const CH_SHORT     = {Facebook:'FB','Google Branded':'G.Brand','Google Non-Branded':'G.Non-Brand'};
+
+// Curve data: 3 points per program/channel [spend, cpe]
+// Low=60% spend, CPE×0.82; Mid=ref; High=200% spend, CPE×1.6
+let CURVES = {};
+PROGRAMS.forEach(p => {
+  CURVES[p] = {};
+  CHANNELS.forEach(ch => {
+    const r = REF[p][ch];
+    CURVES[p][ch] = [
+      [Math.round(r.spend*0.5), Math.round(r.cpe*0.82)],
+      [r.spend,                  r.cpe],
+      [Math.round(r.spend*2.2),  Math.round(r.cpe*1.65)],
+    ];
+  });
+});
+
+// Current allocation (spend per program/channel)
+let ALLOC = {};
+PROGRAMS.forEach(p => {
+  ALLOC[p] = {};
+  CHANNELS.forEach(ch => { ALLOC[p][ch] = REF[p][ch].spend; });
+});
+
+// ─── CURVE MATH ─────────────────────────────────────────────────────────────
+function getCPE(prog, ch, spend) {
+  if(spend <= 0) return 0;
+  const pts = CURVES[prog][ch].slice().sort((a,b)=>a[0]-b[0]);
+  // find bracketing points
+  let lo, hi;
+  for(let i=0;i<pts.length-1;i++){
+    if(spend >= pts[i][0] && spend <= pts[i+1][0]){ lo=pts[i]; hi=pts[i+1]; break; }
+  }
+  if(!lo){ // extrapolate
+    if(spend < pts[0][0]){ lo=pts[0]; hi=pts[1]; }
+    else{ lo=pts[pts.length-2]; hi=pts[pts.length-1]; }
+  }
+  // log-log interpolation (power law)
+  if(lo[0]===hi[0]) return lo[1];
+  const alpha = Math.log(hi[1]/lo[1]) / Math.log(hi[0]/lo[0]);
+  return lo[1] * Math.pow(spend/lo[0], alpha);
+}
+
+function getEnrollments(prog, ch, spend) {
+  const cpe = getCPE(prog, ch, spend);
+  return cpe > 0 ? spend / cpe : 0;
+}
+
+function getMarginalCPE(prog, ch, spend) {
+  const delta = 10000;
+  const e1 = getEnrollments(prog, ch, spend);
+  const e2 = getEnrollments(prog, ch, spend + delta);
+  const diff = e2 - e1;
+  return diff > 0 ? delta / diff : Infinity;
+}
+
+// ─── BUILD UI ────────────────────────────────────────────────────────────────
+function pill(txt, bg, tx){ return `<span class="pill" style="background:${bg};color:${tx};">${txt}</span>`; }
+function fmt$(n){ return n===Infinity||isNaN(n)?'—':'$'+Math.round(n).toLocaleString(); }
+function fmtN(n){ return Math.round(n).toLocaleString(); }
+
+// Curve setup tabs
+function buildCurveTabs(){
+  const tabsEl = document.getElementById('curve_tabs');
+  const panelsEl = document.getElementById('curve_panels');
+  tabsEl.innerHTML = PROGRAMS.map((p,i)=>`<button class="tab${i===0?' active':''}" onclick="switchTab('${p}')">${pill(p,PROG_PILLS[p].bg,PROG_PILLS[p].tx)}</button>`).join('');
+  panelsEl.innerHTML = PROGRAMS.map((p,i)=>{
+    let html = `<div class="tabpanel${i===0?' active':''}" id="panel_${p}">`;
+    html += `<table><thead><tr><th>Channel</th><th colspan="2">Low scenario</th><th colspan="2">Base scenario</th><th colspan="2">High scenario</th></tr><tr><th></th><th>Monthly spend</th><th>CPE ($)</th><th>Monthly spend</th><th>CPE ($)</th><th>Monthly spend</th><th>CPE ($)</th></tr></thead><tbody>`;
+    CHANNELS.forEach(ch=>{
+      const pts = CURVES[p][ch];
+      const cs = CH_PILLS[ch];
+      html += `<tr><td>${pill(ch,cs.bg,cs.tx)}</td>`;
+      for(let i=0;i<3;i++){
+        html += `<td><input type="number" id="c_${p}_${ch.replace(/ /g,'_')}_s${i}" value="${pts[i][0]}" step="5000" onchange="updateCurve('${p}','${ch}',${i},this.value,null);"></td>`;
+        html += `<td><input type="number" id="c_${p}_${ch.replace(/ /g,'_')}_e${i}" value="${pts[i][1]}" step="10" onchange="updateCurve('${p}','${ch}',${i},null,this.value);"></td>`;
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }).join('');
+}
+
+function switchTab(prog){
+  document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel_'+prog).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{ if(t.textContent.includes(prog)) t.classList.add('active'); });
+}
+
+function updateCurve(prog, ch, idx, sVal, eVal){
+  const key = ch.replace(/ /g,'_');
+  if(sVal!==null) CURVES[prog][ch][idx][0] = Math.max(1, parseFloat(sVal)||1);
+  if(eVal!==null) CURVES[prog][ch][idx][1] = Math.max(1, parseFloat(eVal)||1);
+  refreshAll();
+}
+
+// Allocation table
+function buildAllocTable(){
+  let html = '<table><thead><tr><th>Program</th>';
+  CHANNELS.forEach(ch=>{ html += `<th colspan="3">${pill(ch,CH_PILLS[ch].bg,CH_PILLS[ch].tx)}</th>`; });
+  html += '</tr><tr><th></th>';
+  CHANNELS.forEach(()=>{ html += '<th>Monthly spend ($)</th><th>Est. CPE</th><th>D30 Enr</th>'; });
+  html += '</tr></thead><tbody>';
+  PROGRAMS.forEach(p=>{
+    const ps = PROG_PILLS[p];
+    html += `<tr><td>${pill(p,ps.bg,ps.tx)}</td>`;
+    CHANNELS.forEach(ch=>{
+      const key = p+'_'+ch.replace(/ /g,'_');
+      const pts = CURVES[p][ch];
+      html += `<td>
+        <div style="display:flex;gap:4px;margin-bottom:4px;">
+          <button class="lvl-btn" onclick="setLevel('${p}','${ch}',0)">Low</button>
+          <button class="lvl-btn" onclick="setLevel('${p}','${ch}',1)">Base</button>
+          <button class="lvl-btn" onclick="setLevel('${p}','${ch}',2)">High</button>
+        </div>
+        <input type="number" id="a_${key}" value="${ALLOC[p][ch]}" step="5000" style="width:100%;" oninput="setAlloc('${p}','${ch}',this.value)">
+      </td>
+      <td><div id="cpe_${key}" class="cpe-live">${fmt$(getCPE(p,ch,ALLOC[p][ch]))}</div></td>
+      <td><div id="enr_${key}" class="enr-live">${fmtN(getEnrollments(p,ch,ALLOC[p][ch]))}</div></td>`;
+    });
+    html += '</tr>';
+  });
+  // totals row
+  html += '<tr class="tfoot-row"><td><strong>Total</strong></td>';
+  CHANNELS.forEach(ch=>{
+    const totSpend = PROGRAMS.reduce((a,p)=>a+ALLOC[p][ch],0);
+    const totEnr   = PROGRAMS.reduce((a,p)=>a+getEnrollments(p,ch,ALLOC[p][ch]),0);
+    html += `<td id="tot_s_${ch.replace(/ /g,'_')}">${fmt$(totSpend)}</td><td>—</td><td id="tot_e_${ch.replace(/ /g,'_')}">${fmtN(totEnr)}</td>`;
+  });
+  html += '</tr></tbody></table>';
+  document.getElementById('alloc_table_wrap').innerHTML = html;
+}
+
+function setLevel(prog, ch, idx){
+  const pts = CURVES[prog][ch];
+  const s = pts[idx][0];
+  ALLOC[prog][ch] = s;
+  const key = prog+'_'+ch.replace(/ /g,'_');
+  const el = document.getElementById('a_'+key);
+  if(el) el.value = s;
+  refreshAll();
+}
+
+function setAlloc(prog, ch, val){
+  ALLOC[prog][ch] = Math.max(0, parseFloat(val)||0);
+  refreshAll();
+}
+
+// ─── RESULTS ─────────────────────────────────────────────────────────────────
+function calcTotals(){
+  let totalSpend=0, totalEnr=0;
+  PROGRAMS.forEach(p=>CHANNELS.forEach(ch=>{
+    totalSpend += ALLOC[p][ch];
+    totalEnr   += getEnrollments(p,ch,ALLOC[p][ch]);
+  }));
+  const cac = totalEnr>0 ? totalSpend/totalEnr : 0;
+  return {totalSpend, totalEnr, cac};
+}
+
+function updateResults(){
+  const {totalSpend,totalEnr,cac} = calcTotals();
+  document.getElementById('results_metrics').innerHTML = `
+    <div class="metric-card"><div class="metric-lbl">Overall CAC</div><div class="metric-val">${fmt$(cac)}</div><div class="metric-sub">cost per D30 enrollment</div></div>
+    <div class="metric-card"><div class="metric-lbl">Total monthly spend</div><div class="metric-val">${fmt$(totalSpend)}</div><div class="metric-sub">across all programs & channels</div></div>
+    <div class="metric-card"><div class="metric-lbl">Total D30 enrollments</div><div class="metric-val">${fmtN(totalEnr)}</div><div class="metric-sub">projected per month</div></div>`;
+
+  // Marginal table — rank all 12 combos by marginal CPE
+  const rows = [];
+  PROGRAMS.forEach(p=>CHANNELS.forEach(ch=>{
+    const s = ALLOC[p][ch];
+    const cpe = getCPE(p,ch,s);
+    const enr = getEnrollments(p,ch,s);
+    const mcpe = getMarginalCPE(p,ch,s);
+    const cacVal = enr>0 ? s/enr : 0;
+    rows.push({p,ch,s,cpe,enr,mcpe,cac:cacVal});
+  }));
+  rows.sort((a,b)=>a.mcpe-b.mcpe);
+  const tbody = document.getElementById('marginal_body');
+  tbody.innerHTML = rows.map((r,i)=>{
+    const ps=PROG_PILLS[r.p], cs=CH_PILLS[r.ch];
+    const rankClass = i===0?'rank-1':i===1?'rank-2':i>=rows.length-3?'rank-bad':'';
+    const rankLabel = i===0?'Most efficient':i===1?'2nd':i>=rows.length-3?'Least efficient':'';
+    return `<tr>
+      <td>${rankLabel?`<span class="${rankClass}">${rankLabel}</span>`:i+1}</td>
+      <td>${pill(r.p,ps.bg,ps.tx)}</td>
+      <td>${pill(r.ch,cs.bg,cs.tx)}</td>
+      <td>${fmt$(r.s)}</td>
+      <td>${fmt$(r.cpe)}</td>
+      <td class="${i<3?'good':i>=rows.length-3?'bad':''}">${fmt$(r.mcpe)}</td>
+      <td>${fmtN(r.enr)}</td>
+      <td>${fmt$(r.cac)}</td>
+    </tr>`;
+  }).join('');
+
+  // update channel totals in alloc table
+  CHANNELS.forEach(ch=>{
+    const k=ch.replace(/ /g,'_');
+    const totS=document.getElementById('tot_s_'+k);
+    const totE=document.getElementById('tot_e_'+k);
+    if(totS) totS.textContent=fmt$(PROGRAMS.reduce((a,p)=>a+ALLOC[p][ch],0));
+    if(totE) totE.textContent=fmtN(PROGRAMS.reduce((a,p)=>a+getEnrollments(p,ch,ALLOC[p][ch]),0));
+  });
+
+  // update per-cell CPE and enr live displays
+  PROGRAMS.forEach(p=>CHANNELS.forEach(ch=>{
+    const key=p+'_'+ch.replace(/ /g,'_');
+    const cpeEl=document.getElementById('cpe_'+key);
+    const enrEl=document.getElementById('enr_'+key);
+    if(cpeEl) cpeEl.textContent=fmt$(getCPE(p,ch,ALLOC[p][ch]));
+    if(enrEl) enrEl.textContent=fmtN(getEnrollments(p,ch,ALLOC[p][ch]));
+  }));
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+let charts = {};
+
+function buildCharts(){
+  ['Facebook','Google Branded','Google Non-Branded'].forEach((ch,i)=>{
+    const id = ['chart_fb','chart_gb','chart_nb'][i];
+    const ctx = document.getElementById(id).getContext('2d');
+    const datasets = PROGRAMS.map(p=>{
+      // generate curve points
+      const pts = CURVES[p][ch].slice().sort((a,b)=>a[0]-b[0]);
+      const maxS = pts[pts.length-1][0]*1.2;
+      const N=60;
+      const data=[];
+      for(let j=0;j<=N;j++){
+        const s = (maxS/N)*j;
+        data.push({x:s, y:getCPE(p,ch,s)});
+      }
+      return {
+        label:p, data, borderColor:PROG_COLORS[p], backgroundColor:'transparent',
+        borderWidth:2, pointRadius:0, tension:0.4, type:'line',
+      };
+    });
+    // add current allocation dots
+    PROGRAMS.forEach((p,pi)=>{
+      const s = ALLOC[p][ch];
+      const cpe = getCPE(p,ch,s);
+      datasets.push({
+        label:p+' (current)', data:[{x:s,y:cpe}],
+        borderColor:PROG_COLORS[p], backgroundColor:PROG_COLORS[p],
+        pointRadius:7, pointHoverRadius:9, showLine:false, type:'scatter',
+      });
+    });
+    if(charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx,{
+      type:'scatter',
+      data:{datasets},
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{legend:{display:false},tooltip:{callbacks:{
+          label:ctx=>`${ctx.dataset.label}: ${fmt$(ctx.parsed.x)} → CPE ${fmt$(ctx.parsed.y)}`
+        }}},
+        scales:{
+          x:{title:{display:true,text:'Monthly spend ($)',font:{size:9}},ticks:{callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+(v/1000).toFixed(0)+'k',font:{size:9}}},
+          y:{title:{display:true,text:'CPE ($)',font:{size:9}},ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}}},
+        }
+      }
+    });
+  });
+  buildFrontierChart();
+}
+
+function buildFrontierChart(){
+  const ctx = document.getElementById('chart_frontier').getContext('2d');
+  // For each budget level from 50% to 200% of current, maintain same % allocation
+  const {totalSpend:curSpend} = calcTotals();
+  const points=[];
+  for(let mult=0.3;mult<=2.2;mult+=0.05){
+    const s=curSpend*mult;
+    let enr=0;
+    PROGRAMS.forEach(p=>CHANNELS.forEach(ch=>{
+      const frac=(ALLOC[p][ch]||0)/curSpend;
+      enr+=getEnrollments(p,ch,s*frac);
+    }));
+    points.push({x:s,y:enr>0?s/enr:0});
+  }
+  // current point
+  const {totalEnr,cac} = calcTotals();
+  if(charts['frontier']) charts['frontier'].destroy();
+  charts['frontier'] = new Chart(ctx,{
+    type:'scatter',
+    data:{datasets:[
+      {label:'CAC curve',data:points,borderColor:'#7F77DD',backgroundColor:'transparent',showLine:true,borderWidth:2,pointRadius:0,tension:0.3},
+      {label:'Current',data:[{x:curSpend,y:cac}],borderColor:'#1a1a1a',backgroundColor:'#1a1a1a',pointRadius:8,showLine:false},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:ctx=>`Spend ${fmt$(ctx.parsed.x)}, CAC ${fmt$(ctx.parsed.y)}`
+      }}},
+      scales:{
+        x:{title:{display:true,text:'Total monthly spend ($)',font:{size:9}},ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M',font:{size:9}}},
+        y:{title:{display:true,text:'Overall CAC ($)',font:{size:9}},ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}}},
+      }
+    }
+  });
+}
+
+function updateCharts(){
+  ['Facebook','Google Branded','Google Non-Branded'].forEach((ch,i)=>{
+    const id = ['chart_fb','chart_gb','chart_nb'][i];
+    if(!charts[id]) return;
+    // update curve data (in case curves changed)
+    PROGRAMS.forEach((p,pi)=>{
+      const pts = CURVES[p][ch].slice().sort((a,b)=>a[0]-b[0]);
+      const maxS = pts[pts.length-1][0]*1.2;
+      const N=60;
+      const lineData=[];
+      for(let j=0;j<=N;j++){ const s=(maxS/N)*j; lineData.push({x:s,y:getCPE(p,ch,s)}); }
+      charts[id].data.datasets[pi].data = lineData;
+      // update dot
+      const s = ALLOC[p][ch];
+      charts[id].data.datasets[PROGRAMS.length+pi].data = [{x:s,y:getCPE(p,ch,s)}];
+    });
+    charts[id].update('none');
+  });
+  buildFrontierChart();
+}
+
+function refreshAll(){
+  updateResults();
+  updateCharts();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+buildCurveTabs();
+buildAllocTable();
+updateResults();
+buildCharts();
+</script>
+</body>
+</html>
